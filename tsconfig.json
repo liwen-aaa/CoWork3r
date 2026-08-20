@@ -4,8 +4,15 @@
   "compilerOptions": {
     "target": "es2023",
     "lib": ["es2023"],
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    // 目标形态里没有打包器：pi 用 jiti 直接加载源码，而人工验证脚本用裸 node 跑。
+    // 两者都要求相对 import 精确到文件（含 .ts 扩展名、目录不自动补 index）。
+    // "bundler" 是「假定有打包器帮你解析」，那个前提我们没有——M1 的人工验证
+    // 用裸 node 跑时立刻撞上 ERR_MODULE_NOT_FOUND。老仓库是唯一在 pi 里真跑起来过的
+    // 形态，它的 import 全带 .ts。
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": false,
     "types": ["node"],
 
     "strict": true,

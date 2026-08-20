@@ -20,9 +20,9 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 
-import type { Message, Role } from "../protocol/message";
-import { writeTextAtomic } from "./atomic";
-import { channelPaths } from "./paths";
+import type { Message, Role } from "../protocol/message.ts";
+import { writeTextAtomic } from "./atomic.ts";
+import { channelPaths } from "./paths.ts";
 
 /** C8：校验函数的**形状**在本层定义，**内容**由调用方给（M2 传 protocol 的 validate） */
 export type Validate = (msg: Message) => { ok: true } | { ok: false; reason: string };

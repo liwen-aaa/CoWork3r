@@ -8,8 +8,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { channelPaths, deliver, watchInbox } from "../../src/channel";
-import { buildMessage, makeRoot, routeValidate, waitFor } from "./_fixture";
+import { channelPaths, deliver, watchInbox } from "../../src/channel/index.ts";
+import { buildMessage, makeRoot, routeValidate, waitFor } from "./_fixture.ts";
 
 describe("C2 处理后清空", () => {
   it("消息被处理后 inbox 为空", async () => {

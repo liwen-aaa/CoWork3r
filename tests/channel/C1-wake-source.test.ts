@@ -10,8 +10,8 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { deliver, watchInbox } from "../../src/channel";
-import { buildMessage, makeRoot, routeValidate, waitFor } from "./_fixture";
+import { deliver, watchInbox } from "../../src/channel/index.ts";
+import { buildMessage, makeRoot, routeValidate, waitFor } from "./_fixture.ts";
 
 describe("C1 唤醒来源可观测", () => {
   it("禁用 fs.watch 时，标记为 poll", async () => {

@@ -9,8 +9,8 @@
  */
 import { readFileSync } from "node:fs";
 
-import { writeJsonAtomic } from "./atomic";
-import { channelPaths } from "./paths";
+import { writeJsonAtomic } from "./atomic.ts";
+import { channelPaths } from "./paths.ts";
 
 export type State = {
   /** 里程碑 id，如 "M1"。字符串，不是数字 */

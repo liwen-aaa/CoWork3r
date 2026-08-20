@@ -11,8 +11,8 @@
 import { renameSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { channelPaths, watchInbox } from "../../src/channel";
-import { buildMessage, makeRoot, waitFor } from "./_fixture";
+import { channelPaths, watchInbox } from "../../src/channel/index.ts";
+import { buildMessage, makeRoot, waitFor } from "./_fixture.ts";
 
 describe("C1 轮询兜底", () => {
   it("禁用 fs.watch 后，轮询在 10s 内触发处理", async () => {

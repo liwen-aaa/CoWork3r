@@ -26,14 +26,14 @@
  *
  * 只导出下面这些，其它一律私有。
  */
-export { writeJsonAtomic, writeTextAtomic } from "./atomic";
-export { bumpCounters } from "./counters";
-export { clearIfSame, deliver, peek } from "./inbox";
-export { channelPaths } from "./paths";
-export { readState, writeState } from "./state";
-export { watchInbox } from "./watch";
+export { writeJsonAtomic, writeTextAtomic } from "./atomic.ts";
+export { bumpCounters } from "./counters.ts";
+export { clearIfSame, deliver, peek } from "./inbox.ts";
+export { channelPaths } from "./paths.ts";
+export { readState, writeState } from "./state.ts";
+export { watchInbox } from "./watch.ts";
 
-export type { ChannelPaths } from "./paths";
-export type { DeliverResult, Validate } from "./inbox";
-export type { State } from "./state";
-export type { Stop, WatchOptions, Watcher } from "./watch";
+export type { ChannelPaths } from "./paths.ts";
+export type { DeliverResult, Validate } from "./inbox.ts";
+export type { State } from "./state.ts";
+export type { Stop, WatchOptions, Watcher } from "./watch.ts";

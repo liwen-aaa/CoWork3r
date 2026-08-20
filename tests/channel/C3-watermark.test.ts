@@ -13,8 +13,8 @@
 import { readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { channelPaths, deliver, watchInbox } from "../../src/channel";
-import { buildMessage, makeRoot, routeValidate, sleep, waitFor } from "./_fixture";
+import { channelPaths, deliver, watchInbox } from "../../src/channel/index.ts";
+import { buildMessage, makeRoot, routeValidate, sleep, waitFor } from "./_fixture.ts";
 
 describe("C3 水位标记", () => {
   it("重启后不重放旧消息", async () => {

@@ -10,8 +10,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { channelPaths, deliver, watchInbox } from "../../src/channel";
-import { buildMessage, makeRoot, routeValidate, sleep, waitFor } from "./_fixture";
+import { channelPaths, deliver, watchInbox } from "../../src/channel/index.ts";
+import { buildMessage, makeRoot, routeValidate, sleep, waitFor } from "./_fixture.ts";
 
 describe("C2 条件清空", () => {
   it("处理期间投递的新消息不被误清，且恰好处理一次", async () => {

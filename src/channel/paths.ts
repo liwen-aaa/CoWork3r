@@ -20,7 +20,7 @@
  */
 import { join } from "node:path";
 
-import type { Role } from "../protocol/message";
+import type { Role } from "../protocol/message.ts";
 
 export type ChannelPaths = {
   msgDir: string;

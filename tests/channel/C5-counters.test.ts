@@ -8,8 +8,8 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { bumpCounters } from "../../src/channel";
-import { makeRoot } from "./_fixture";
+import { bumpCounters } from "../../src/channel/index.ts";
+import { makeRoot } from "./_fixture.ts";
 
 describe("C5 跨轮计数", () => {
   it("跨「重启」累计到阈值", () => {

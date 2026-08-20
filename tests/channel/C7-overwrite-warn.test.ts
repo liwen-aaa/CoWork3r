@@ -11,8 +11,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { channelPaths, deliver } from "../../src/channel";
-import { buildMessage, makeRoot, routeValidate } from "./_fixture";
+import { channelPaths, deliver } from "../../src/channel/index.ts";
+import { buildMessage, makeRoot, routeValidate } from "./_fixture.ts";
 
 describe("C7 覆盖告警", () => {
   it("空 inbox → overwritten:false", () => {

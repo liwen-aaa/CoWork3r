@@ -14,10 +14,10 @@
  */
 import { mkdirSync, statSync, watch as fsWatch, readFileSync } from "node:fs";
 
-import type { Message, Role } from "../protocol/message";
-import { writeTextAtomic } from "./atomic";
-import { clearIfSame, peek } from "./inbox";
-import { channelPaths } from "./paths";
+import type { Message, Role } from "../protocol/message.ts";
+import { writeTextAtomic } from "./atomic.ts";
+import { clearIfSame, peek } from "./inbox.ts";
+import { channelPaths } from "./paths.ts";
 
 /** 关掉所有定时器与 watcher。测试里必须能停，否则进程不退出（plan.md M1 有一条断言） */
 export type Stop = () => void;

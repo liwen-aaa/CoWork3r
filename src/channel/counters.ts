@@ -9,9 +9,9 @@
  */
 import { readFileSync } from "node:fs";
 
-import type { Role } from "../protocol/message";
-import { writeJsonAtomic } from "./atomic";
-import { channelPaths } from "./paths";
+import type { Role } from "../protocol/message.ts";
+import { writeJsonAtomic } from "./atomic.ts";
+import { channelPaths } from "./paths.ts";
 
 type Counts = Record<string, number>;
 

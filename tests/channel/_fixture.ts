@@ -19,10 +19,10 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { ROUTES } from "../../src/protocol/routes";
-import type { Message, MsgType, Role } from "../../src/protocol/message";
-import { channelPaths } from "../../src/channel";
-import type { Validate } from "../../src/channel";
+import { ROUTES } from "../../src/protocol/routes.ts";
+import type { Message, MsgType, Role } from "../../src/protocol/message.ts";
+import { channelPaths } from "../../src/channel/index.ts";
+import type { Validate } from "../../src/channel/index.ts";
 
 /**
  * 每个用例一个临时根目录。

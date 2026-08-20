@@ -12,8 +12,8 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { deliver, watchInbox } from "../../src/channel";
-import { buildMessage, makeRoot, routeValidate, sleep } from "./_fixture";
+import { deliver, watchInbox } from "../../src/channel/index.ts";
+import { buildMessage, makeRoot, routeValidate, sleep } from "./_fixture.ts";
 
 describe("C6 两个监听者", () => {
   it("同一收件箱两个监听者：消息总共只被处理一次", async () => {

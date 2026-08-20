@@ -14,8 +14,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { channelPaths, deliver } from "../../src/channel";
-import { buildMessage, makeRoot, rejectingValidate, routeValidate } from "./_fixture";
+import { channelPaths, deliver } from "../../src/channel/index.ts";
+import { buildMessage, makeRoot, rejectingValidate, routeValidate } from "./_fixture.ts";
 
 describe("C8 落盘前校验", () => {
   it("validate 返回 ok:false → deliver 也 ok:false，且文件未被写", () => {

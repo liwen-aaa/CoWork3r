@@ -4,7 +4,7 @@
  * M1 只写类型；`build` / `validate` / schema 生成属 M2（plan.md M1「涉及」节的限定）。
  * 本文件零运行时依赖，也不 import 本项目其它模块。
  */
-import type { ROUTES } from "./routes";
+import type { ROUTES } from "./routes.ts";
 
 export type Role = "arch" | "dev" | "tester" | "human";
 

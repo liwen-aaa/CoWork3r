@@ -19,8 +19,8 @@
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { channelPaths, readState, writeJsonAtomic, writeState } from "../../src/channel";
-import { makeRoot } from "./_fixture";
+import { channelPaths, readState, writeJsonAtomic, writeState } from "../../src/channel/index.ts";
+import { makeRoot } from "./_fixture.ts";
 
 describe("C4 原子写", () => {
   it("并发写入不产生半截 JSON", async () => {

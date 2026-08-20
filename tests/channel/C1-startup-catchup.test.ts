@@ -7,8 +7,8 @@
 import { writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { channelPaths, watchInbox } from "../../src/channel";
-import { buildMessage, makeRoot, sleep, waitFor } from "./_fixture";
+import { channelPaths, watchInbox } from "../../src/channel/index.ts";
+import { buildMessage, makeRoot, sleep, waitFor } from "./_fixture.ts";
 
 describe("C1 启动补收", () => {
   it("启动前已存在的消息，启动后被处理恰好一次", async () => {
