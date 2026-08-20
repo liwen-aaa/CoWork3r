@@ -41,7 +41,7 @@
 | # | 事 | 阶段 | 状态 |
 |---|---|---|---|
 | 1 | 本项目自己的 [`plan.md`](../plan.md) | 开工前 | ✅ 断言逐条签字完毕 |
-| 2 | 回归 fixture（老仓库真实产物 6 份） | 开工前 | ✅ 在 [`../inherited/fixtures/`](../inherited/fixtures/) |
+| 2 | 回归 fixture（老仓库真实产物 6 份） | 开工前 | ✅ 在 [`../../tests/fixtures/paper/`](../../tests/fixtures/paper/) |
 | 3 | 骨架 e2e 测试的形状 | ~~开工前~~ → M6 | ⬜ **不再是前置**。mock-pi 的 API 清单 = wire.ts 碰了 pi 哪几个方法，从接口导出而不是输入，提前写就是猜。事后补不回来的只有注入缝，已由 D-07 + [M6.A9](../plan.md) 钉住 |
 | 4 | 老仓库宪法 30 条 → `docs/constitution.md` | 不阻塞开工 | ⬜ 阻塞的是「重写时别踩坑」，可在 M1–M6 过程中逐条核对迁入 |
 

@@ -77,14 +77,14 @@
 
 - [auto] `npm test -- tests/plan` 全绿，含 L1–L9
 - [auto] L8 用 `templates/plan.md` 本体作输入，解析成功
-- [auto] L9 用 `docs/inherited/fixtures/paper-plan.md`（老仓库真实规划书副本）作输入，解析失败且错误含行号
+- [auto] L9 用 `tests/fixtures/paper/paper-plan.md`（老仓库真实规划书副本）作输入，解析失败且错误含行号
 - [auto] L1 最小样本（一里程碑一断言、无可省节）解析成功
 - [auto] 本文件（`docs/plan.md`）能被 `parsePlan` 解析成功，且解出 6 个里程碑
 - [human] 用本语法重写一次某个里程碑的断言，全程语法自洽：出现任何「不得不绕过语法、用自然语言糊过去」的地方即判 FAIL
 
 ### 涉及
 
-- `src/plan/`、`tests/plan/`、`docs/inherited/fixtures/`
+- `src/plan/`、`tests/plan/`、`tests/fixtures/paper/`
 
 ### 依赖
 
@@ -104,7 +104,7 @@
 
 ### 涉及
 
-- `src/gates/`、`tests/gates/`、`docs/inherited/fixtures/`
+- `src/gates/`、`tests/gates/`、`tests/fixtures/paper/`
 
 ### 依赖
 

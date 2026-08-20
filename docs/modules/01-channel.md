@@ -151,7 +151,7 @@ export function watchInbox(root: string, role: Role, onMessage: (m: Message) => 
 export function bumpCounters(root: string, role: Role, ids: string[], threshold: number): string[];
 ```
 
-`Message` 与 `Role` 的类型定义在 **02-protocol**，本层 `import type` 取用（见 `modules/README.md` 类型依赖说明）。只搬运不解释——通道不关心消息是什么意思。`Validate` 同理：本层定义它的**形状**，不知道它的**内容**。
+`Message` 与 `Role` 的类型定义在 **02-protocol**，本层 `import type` 取用（见 `modules/00-index.md` 类型依赖说明）。只搬运不解释——通道不关心消息是什么意思。`Validate` 同理：本层定义它的**形状**，不知道它的**内容**。
 
 `watchInbox` 返回 `Stop`（一个关掉定时器和 watcher 的函数）：测试里必须能停，否则进程不退出。老仓库没有这个，测试靠进程结束兜底。
 
