@@ -4,7 +4,7 @@
 
 ## 每次都读
 
-- [`docs/disciplines.md`](docs/disciplines.md) — 纪律台账，动手前读
+- [`docs/disciplines.md`](docs/disciplines.md) — 纪律台账，动手前读。拿到常驻机制的条目离开本读序，被拦时以机制输出为准（D-48）；已离开 D-41 / D-47
 
 ## 按需
 
@@ -21,4 +21,4 @@
 
 - `src/` 里 pi 只能 `import type` — D-07，A9 会 grep
 - 模块完工要拆掉对应的 `NN-*.md` — D-06
-- 每里程碑三个 commit：测试红 → 实现绿 → 文档收缩
+- 每里程碑**至少**三个 commit：测试红 → 实现绿 → 文档收缩（固定数只是下限，D-46）
