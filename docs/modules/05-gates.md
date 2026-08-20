@@ -164,7 +164,7 @@ tests/gates/
 ├── T7-human-questions.test.ts  questions 未覆盖全部 [human] → block
 ├── T8-config-fatal.test.ts     配置 fatal → verdict_pass 被拦，review_request 放行
 ├── T9-chain-order.test.ts      结构不过时不执行跑命令（贵的不白跑）
-└── T10-paper-regression.test.ts 老仓库四份 test-report → 全部 block（当年 4/4 静默放行）
+└── T10-paper-regression.test.ts 老仓库四份真实 test-report + plan.minimal.md 解出的 M1 → 全部 block
 ```
 
 **T10 是回归证据**：老仓库那四份报告缺「文档一致性」节，当年全部通过。新形状下它们缺的是断言编号覆盖，同样必须 block——换了判据，但那批真实输入仍然抓得住。

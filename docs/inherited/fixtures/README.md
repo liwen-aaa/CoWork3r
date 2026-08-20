@@ -29,4 +29,18 @@
 - 四份 test-report 现在**因为缺断言编号覆盖**而 block，不再因为缺「文档一致性」节
 - `paper-dev-output-M4.md` 严格说也不满足新判据（它对着旧格式写的，没有断言编号）
 
-**T2/T10 使用它们时要显式构造对应的 `Milestone`**（从 `paper-plan.md` 解析不出来，得手写一个最小 Milestone 传进去）。这一点在写测试时不要绕：绕过去就等于自造 fixture，失去了「真实输入」的意义。
+### Milestone 从哪来
+
+T2/T10 需要一个 `Milestone` 对象才能跑 G-artifact，而 `paper-plan.md` 根本解析不出来（它就是 L9 的失败样本）。
+
+**不得在测试里写字符串字面量造一个 Milestone。** 正确做法：
+
+```ts
+const plan = parsePlan(REPO_ROOT, "templates/plan.minimal.md");
+const m = milestone(plan, "M1");   // 真实解析产物
+```
+
+理由：字面量会跟着语法漂——改了解析器，字面量里那个手写对象仍然能跑，于是 gate 测试维持绿色而真实链路已经断了。
+这正是老仓库那两个月的形状：模板一份格式、gate 另一份判据，两边各自绿着。
+
+从 `templates/plan.minimal.md` 读则：语法改了而模板未同步 → `parsePlan` 失败 → T2/T10 红。失败位置就是真相位置。

@@ -172,7 +172,7 @@ export function assertionHash(m: Milestone): string;
 
 ```
 tests/plan/
-├── L1-minimal.test.ts        一个里程碑 + 一条断言 → ok（可省节全部缺失）
+├── L1-minimal.test.ts        输入 = `templates/plan.minimal.md`（不是字面量）→ ok，可省节全部缺失
 ├── L2-numbering.test.ts      第 3 条断言 id === "M1.3"
 ├── L3-kind-required.test.ts  断言未标 [auto]/[human] → 报错含行号
 ├── L4-auto-needs-cmd.test.ts [auto] 无命令无路径 → checkAssertion 失败
@@ -184,6 +184,10 @@ tests/plan/
 ```
 
 **L8 是防漂移的关键。** 模板和解析器同源的保证方式就是让模板进测试——老仓库那两份格式分裂两个月没人发现，是因为模板从来没被解析过一次。
+
+**测试输入不得是字符串字面量。** L1 读 `templates/plan.minimal.md`，L8 读 `templates/plan.md`，L9 读真实 fixture。
+在测试里内联一段 markdown 字面量，等于给语法建了第二份定义（D-04）：
+改了解析器而忘了改模板，字面量那边仍然绿着，而真实使用路径已经断了。
 
 **L9 是回归证据。** 拿真实出过事的输入当测试用例：老仓库那份规划书应该报错，而且报错要说清缺什么、在哪一行。它当年静默通不过 gate，现在必须有声。
 
