@@ -15,12 +15,13 @@
  * M2 落地时的动作：删掉 `buildMessage`，各测试改 `import { build }`，
  * 删掉 `routeValidate`，改 `import { validate }`。本文件应只剩 `makeRoot`。
  */
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { ROUTES } from "../../src/protocol/routes";
 import type { Message, MsgType, Role } from "../../src/protocol/message";
+import { channelPaths } from "../../src/channel";
 import type { Validate } from "../../src/channel";
 
 /**
@@ -31,6 +32,9 @@ import type { Validate } from "../../src/channel";
  */
 export function makeRoot(label: string): { root: string; cleanup: () => void } {
   const root = mkdtempSync(join(tmpdir(), `wf-${label}-`));
+  // 通道目录预建：真实项目里它由第一次 deliver 或 watchInbox 建出来，
+  // 而有几个用例要在 watchInbox 之前就直接落盘（绕过 deliver 验唤醒侧）。
+  mkdirSync(channelPaths(root).msgDir, { recursive: true });
   return {
     root,
     cleanup: () => {
