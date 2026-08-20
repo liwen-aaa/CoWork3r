@@ -1,6 +1,6 @@
 {
   // 不产出 JS：pi 用 jiti 直接加载 .ts，vitest 自己转译。
-  // 所以本文件只做类型检查（npm run typecheck），没有 build 步骤、没有 dist/。
+  // 所以本文件只做类型检查（npm run typecheck → tsc --noEmit），没有 build 步骤、没有 dist/。
   "compilerOptions": {
     "target": "es2023",
     "lib": ["es2023"],
