@@ -1,0 +1,27 @@
+{
+  // 不产出 JS：pi 用 jiti 直接加载 .ts，vitest 自己转译。
+  // 所以本文件只做类型检查（npm run typecheck），没有 build 步骤、没有 dist/。
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["es2023"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+
+    // D-07：值导入与类型导入必须写清楚。没有它，`import { ExtensionAPI }`
+    // 会被当成类型擦掉，A9 的 grep 就抓不到真正的值导入。
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+
+    "noEmit": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src", "tests", "extensions", "vitest.config.ts"]
+}
