@@ -1,6 +1,6 @@
 # work-flow-remake 规划书
 
-> 澄清：2026-08-20 ｜ 断言逐条签字：**未**（等人逐条过）
+> 澄清：2026-08-20 ｜ 断言逐条签字：**已**（第一版，6 条 `[human]` 逐条过人）
 >
 > 格式定义见 [`templates/plan.md`](../templates/plan.md)，解析器见 04-plan。
 > 本文件同时是 L8/L9 之外的第三个真实解析样本——它自己必须能被 `parsePlan` 吃下去。
@@ -20,7 +20,7 @@
 - [auto] `grep -rln "writeFileSync" src/ | grep -v "channel/atomic.ts"` 无输出
 - [auto] `grep -rln "to-dev.json\|to-arch.json\|to-tester.json\|to-human.json" src/ | grep -v "channel/paths.ts"` 无输出
 - [auto] `npm test -- tests/channel` 进程在 30 秒内自行退出（`Stop` 真的关掉了定时器）
-- [human] 拔掉 `fs.watch` 之后消息仍被处理 —— 轮询兜底是 A 组最容易在重写中丢的一条，我要自己看一次日志确认它真在跑，不是测试凑出来的
+- [human] 拔掉 `fs.watch` 后，在真实 pi 进程的窗口里投一条消息，不碰键盘，等它被轮询处理（≥10s）。日志里要有明确的轮询触发标记，不是 mock 定时器凑出来的 —— C1 验函数行为，这条验真实事件循环里 `setInterval` 没被饿死
 
 ### 涉及
 
@@ -72,7 +72,7 @@
 - [auto] L9 用 `docs/inherited/fixtures/paper-plan.md`（老仓库真实规划书副本）作输入，解析失败且错误含行号
 - [auto] L1 最小样本（一里程碑一断言、无可省节）解析成功
 - [auto] 本文件（`docs/plan.md`）能被 `parsePlan` 解析成功，且解出 6 个里程碑
-- [human] 用它重写一次某个里程碑的断言，过程不别扭 —— 语法好不好用只有写的人知道，测试测不出「写起来累」
+- [human] 用本语法重写一次某个里程碑的断言，全程语法自洽：出现任何「不得不绕过语法、用自然语言糊过去」的地方即判 FAIL
 
 ### 涉及
 
@@ -111,7 +111,6 @@
 - [auto] A6 断言 `extensions/*.ts` 各 ≤ 30 行、`src/adapter/wire.ts` ≤ 120 行
 - [auto] A4 遍历 `flow.ts` 状态表全部 9 个 type
 - [auto] e2e 骨架：临时目录 fixture 项目跑完整一圈（分发 → 产出 → FAIL → 修 → PASS → `/pass` → 回 arch），断言每步的消息落点与状态变化
-- [auto] `npm test` 全套在 5 分钟内完成
 - [human] 在一个新建空项目里真开三个窗口，跑通一个里程碑 —— 这是唯一能证明「它真的在运行」的事，mock-pi 永远证明不了
 
 ### 涉及
