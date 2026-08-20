@@ -46,6 +46,17 @@ export type WatchOptions = {
    * 而且是人审查时发现的，不是它自己报的。所以吞异常，但留一条可观测记录。
    */
   onWarn?: (message: string) => void;
+  /**
+   * 触发源记录口。缺省不记（安静）。
+   *
+   * 三个触发源共用同一个 `check()`，所以从行为上看不出消息是谁唤醒的。
+   * 而「轮询兜底真的在跑」是一条人工断言（plan.md M1）：人要在真窗口里看到它。
+   * 没有这个口，那条断言无法执行——只能看到「消息被处理了」，看不到「是轮询干的」。
+   *
+   * 只在**真的处理了一条消息**时触发，不是每次 check——否则 10s 一行噪声，
+   * 而噪声会训练人忽略日志。
+   */
+  onWake?: (source: "catchup" | "event" | "poll", msg: Message) => void;
 };
 
 const defaultWatch = (dir: string, onChange: (filename: string | null) => void): Watcher =>
@@ -71,6 +82,7 @@ export function watchInbox(
     eventDebounceMs = 200,
     catchupMs = 500,
     onWarn = (m: string) => console.warn(m),
+    onWake,
   } = options;
 
   const p = channelPaths(root);
@@ -118,7 +130,7 @@ export function watchInbox(
   };
 
   /** 全同步。异步化会让 C6 的「只处理一次」重新变成竞态。 */
-  const check = (): void => {
+  const check = (source: "catchup" | "event" | "poll"): void => {
     const mtime = mtimeOf(inboxFile);
     if (mtime === 0 || mtime <= readWatermark()) return;
 
@@ -128,6 +140,10 @@ export function watchInbox(
     if (!msg || msg.to !== role) return;
 
     markWatermark(mtime);
+
+    // 先报触发源再交给 onMessage：onMessage 可能抢占终端输出很久（LLM 一轮），
+    // 标记抢在它前面才能与那条消息在日志里挨着
+    onWake?.(source, msg);
 
     try {
       onMessage(msg);
@@ -155,12 +171,12 @@ export function watchInbox(
   };
 
   // 启动补收：窗口关闭期间到的消息
-  schedule(check, catchupMs);
+  schedule(() => check("catchup"), catchupMs);
 
   if (watch) {
     try {
       watcher = watch(p.msgDir, (filename) => {
-        if (filename === inboxName || filename === null) schedule(check, eventDebounceMs);
+        if (filename === inboxName || filename === null) schedule(() => check("event"), eventDebounceMs);
       });
     } catch (e) {
       // 目录不存在或平台不支持 → 只剩轮询。这正是 C1 存在的理由，不该让窗口起不来
@@ -169,7 +185,7 @@ export function watchInbox(
     }
   }
 
-  const interval = setInterval(check, pollMs);
+  const interval = setInterval(() => check("poll"), pollMs);
   timers.push(interval);
 
   return () => {

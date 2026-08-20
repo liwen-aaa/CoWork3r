@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "vitest --run",
+    "verify:m1": "node tests/manual/M1-poll-fallback.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
