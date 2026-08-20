@@ -7,12 +7,15 @@
     "node": ">=22.19.0"
   },
   "scripts": {
+    "pretest": "npm run check:disciplines && npm run check:testsize",
     "test": "vitest --run",
     "verify:m1": "node tests/manual/M1-poll-fallback.mjs",
     "docs:protocol": "node scripts/docs-protocol.mjs",
     "test:watch": "vitest",
     "check:disciplines": "node scripts/check-disciplines.mjs",
-    "typecheck": "tsc --noEmit"
+    "check:testsize": "node scripts/check-testsize.mjs",
+    "typecheck": "tsc --noEmit",
+    "docs:progress": "node scripts/docs-progress.mjs"
   },
   "devDependencies": {
     "@types/node": "24.12.4",

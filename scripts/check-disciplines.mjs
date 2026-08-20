@@ -20,6 +20,17 @@ import { readFileSync } from "node:fs";
 
 const FILE = "docs/disciplines.md";
 
+/**
+ * 被拦时要打印的判据原文。
+ *
+ * 为什么要带：D-47 获得常驻机制后就离开了每轮读序（AGENTS.md 那条常驻规则）。
+ * 于是 agent 第一次知道 D-47 存在，就是 pretest 拦它的那一刻。
+ * 只说「D-47 violated」的报错等于把人送回去翻台账——那就白移了。
+ */
+const D47 = `D-47 只增不改有机制：本文件的条目只增不减。修订走新编号 + 标注取代关系，
+   不是原地替换。条目按编号严格递增排列——乱序会掩盖删除，递增则少一个号一眼看得出。
+   来源：42bd0e7 把 D-44 整行替换成 D-45，违反的是本文件自己表头第三条，两个提交无人发现。`;
+
 /** 历史上允许过的删除（commit 短 hash）。空数组是目标状态 */
 const ALLOWED_DELETIONS = new Set([
   // 42bd0e7 是 D-47 的来源事故本身：它删掉 D-44 换成 D-45。
@@ -129,7 +140,55 @@ console.log("\n[2] 编号严格递增、无重号（乱序会掩盖删除）");
   }
 }
 
+// ── 3. 声称的机制真的存在并已接线 ───────────────────────────
+console.log("\n[3] 落点列里声称的机制真的存在且已接线");
+{
+  // 这一段堆的是 D-02 本身：落点写 `npm run x` 而 package.json 里没有 x，
+  // 或者 script 存在但没挂进任何会自动跑的钩子，那条纪律就只是「文档声称有机制」。
+  // D-47 自己就在这个状态里活过一阵：表里写着 npm run check:disciplines，
+  // 而那个 script 当时根本不存在。
+  const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
+  const scripts = pkg.scripts ?? {};
+  /** 会自动跑的钩子：pretest 串起来的那几条 + test 本身 */
+  const wired = new Set();
+  for (const [name, body] of Object.entries(scripts)) {
+    if (name === "test" || name.startsWith("pre") || name.startsWith("post")) {
+      for (const m of String(body).matchAll(/npm run ([\w:-]+)/g)) wired.add(m[1]);
+      wired.add(name);
+    }
+  }
+
+  const claims = new Map();
+  for (const line of readFileSync(FILE, "utf-8").split("\n")) {
+    const m = /^\| (D-\d+) \|.*\|([^|]*)\|\s*$/.exec(line);
+    if (!m) continue;
+    for (const c of m[2].matchAll(/npm run ([\w:-]+)/g)) claims.set(m[1], c[1]);
+  }
+
+  if (claims.size === 0) ok("落点列未声称任何 npm script");
+  for (const [id, script] of claims) {
+    if (!scripts[script]) {
+      fail(`${id} 声称 npm run ${script}，但 package.json 里没有这个 script`);
+    } else if (!wired.has(script)) {
+      fail(
+        `${id} 的 npm run ${script} 存在但**未接线**（不在 test / pre* / post* 里）——` +
+          `没人调用的检查器比不存在更坏，因为文档声称有机制（D-02）`,
+      );
+    } else {
+      ok(`${id} → npm run ${script}（已接线）`);
+    }
+  }
+}
+
 console.log(
   `\n判定：${failures === 0 ? "PASS" : `FAIL（${failures} 项）`}`,
 );
+if (failures > 0) {
+  console.log(`\n判据原文：\n   ${D47}`);
+  console.log(
+    `\n怎么改：恢复被删的条目（从它最后存在的提交取回正文），` +
+      `或把新条目换成下一个未用编号追加到本节末尾；` +
+      `若是机制未接线，把它串进 package.json 的 pretest。`,
+  );
+}
 process.exit(failures === 0 ? 0 : 1);
