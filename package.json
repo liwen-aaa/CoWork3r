@@ -9,6 +9,7 @@
   "scripts": {
     "test": "vitest --run",
     "verify:m1": "node tests/manual/M1-poll-fallback.mjs",
+    "docs:protocol": "node scripts/docs-protocol.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },

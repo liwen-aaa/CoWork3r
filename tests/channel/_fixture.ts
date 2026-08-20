@@ -1,26 +1,17 @@
 /**
- * tests/channel/_fixture.ts — 通道层测试的共用输入构造
+ * tests/channel/_fixture.ts — 通道层测试的共用工具
  *
- * ⚠️ M2 替换标记（D-25）
- * ─────────────────────────────────────────────────────────────────
- * D-25 要求测试输入走真实构造路径，不得在测试里手写结构字面量。
- * 但 02-protocol 的 `build()` / `validate()` 在 M2 才落地，M1 需要一个过渡。
+ * 只剩环境构造与等待原语。消息构造与地址校验走 02-protocol 的 `build` / `checkRoute`
+ * ——M1 期间它们还不存在，这里曾有两个薄壳过渡，M2 落地后删掉了（D-25：
+ * 测试输入必须走真实构造路径，薄壳留着就等于第二份权威）。
  *
- * 本文件是那个过渡，且**刻意不复制任何权威**：
- *   - `Message` / `Role` / `MsgType` 类型 → import type 自 src/protocol/message
- *   - `to` 的取值                        → 从 src/protocol/routes 的 ROUTES 查
- * 所以这里没有第二份路由表、也没有第二份类型定义（D-04）。
- * `buildMessage` 只是 `build()` 的薄壳。
- *
- * M2 落地时的动作：删掉 `buildMessage`，各测试改 `import { build }`，
- * 删掉 `routeValidate`，改 `import { validate }`。本文件应只剩 `makeRoot`。
+ * 那两个薄壳的清除有机制兜：`tests/protocol/P5` 会 grep 它们的名字，
+ * 而 plan.md M2 有对应断言。不靠谁记得。
  */
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { ROUTES } from "../../src/protocol/routes.ts";
-import type { Message, MsgType, Role } from "../../src/protocol/message.ts";
 import { channelPaths } from "../../src/channel/index.ts";
 import type { Validate } from "../../src/channel/index.ts";
 
@@ -48,32 +39,6 @@ export function makeRoot(label: string): { root: string; cleanup: () => void } {
     },
   };
 }
-
-/** `build()` 的薄壳（见文件头替换标记）。`to` 从 ROUTES 查，不由调用方传。 */
-export function buildMessage(
-  type: MsgType,
-  from: Role,
-  fields: Partial<Message> = {},
-): Message {
-  return {
-    round: 1,
-    body: "fixture",
-    ...fields,
-    type,
-    from,
-    to: ROUTES[type].to,
-    at: new Date().toISOString(),
-  } as Message;
-}
-
-/**
- * C8 注入用：真实判据的等价物（`msg.to` 必须等于 `ROUTES[type].to`）。
- * M2 落地后换成 `import { validate }`。
- */
-export const routeValidate: Validate = (msg) =>
-  msg.to === ROUTES[msg.type].to
-    ? { ok: true }
-    : { ok: false, reason: `to=${msg.to} 与 ROUTES[${msg.type}].to=${ROUTES[msg.type].to} 不一致` };
 
 /** C8 注入用：无条件拒绝。验的是 deliver 尊重注入结果，与判据内容无关。 */
 export const rejectingValidate: Validate = () => ({

@@ -12,7 +12,8 @@ import { renameSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { channelPaths, watchInbox } from "../../src/channel/index.ts";
-import { buildMessage, makeRoot, waitFor } from "./_fixture.ts";
+import { build } from "../../src/protocol/index.ts";
+import { makeRoot, waitFor } from "./_fixture.ts";
 
 describe("C1 轮询兜底", () => {
   it("禁用 fs.watch 后，轮询在 10s 内触发处理", async () => {
@@ -29,7 +30,7 @@ describe("C1 轮询兜底", () => {
 
     try {
       const p = channelPaths(root);
-      const msg = buildMessage("task_assignment", "arch", { milestone: "M1" });
+      const msg = build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1" });
       // 直接落盘，绕过 deliver——本用例验的是唤醒侧，不是投递侧
       writeFileSync(`${p.inbox("dev")}.tmp`, JSON.stringify(msg), "utf-8");
       renameSync(`${p.inbox("dev")}.tmp`, p.inbox("dev"));
@@ -57,7 +58,7 @@ describe("C1 轮询兜底", () => {
 
     try {
       const p = channelPaths(root);
-      const msg = buildMessage("task_assignment", "arch", { milestone: "M1" });
+      const msg = build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1" });
       writeFileSync(p.inbox("dev"), JSON.stringify(msg), "utf-8");
 
       // 给足三个轮询周期。Stop 生效则永远等不到。

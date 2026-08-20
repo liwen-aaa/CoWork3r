@@ -11,7 +11,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { channelPaths, deliver, watchInbox } from "../../src/channel/index.ts";
-import { buildMessage, makeRoot, routeValidate, sleep, waitFor } from "./_fixture.ts";
+import { build, checkRoute } from "../../src/protocol/index.ts";
+import { makeRoot, sleep, waitFor } from "./_fixture.ts";
 
 describe("C2 条件清空", () => {
   it("处理期间投递的新消息不被误清，且恰好处理一次", async () => {
@@ -27,14 +28,14 @@ describe("C2 条件清空", () => {
         if (!firstDone) {
           firstDone = true;
           // 在 onMessage 执行期间投递第二条：round 不同，四字段比对应当判定「内容已变」
-          deliver(root, buildMessage("task_assignment", "arch", { milestone: "M1", round: 4 }), routeValidate);
+          deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1", round: 4 }), checkRoute);
         }
       },
       { watch: null, pollMs: 200 },
     );
 
     try {
-      deliver(root, buildMessage("task_assignment", "arch", { milestone: "M1", round: 3 }), routeValidate);
+      deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1", round: 3 }), checkRoute);
 
       await waitFor(() => rounds.includes(3) && rounds.includes(4), 8_000);
       // 再等两个周期，确认没有重放

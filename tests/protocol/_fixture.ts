@@ -1,9 +1,8 @@
 /**
  * tests/protocol/_fixture.ts — 协议层测试的共用输入
  *
- * 与 tests/channel/_fixture.ts 的分工：那份是 M1 的过渡（`buildMessage` 是 `build()`
- * 的薄壳，M2 落地后删掉）。本文件不重复它——只提供「每个 type 的必填字段样本」，
- * 因为 `requires` 逐条不同，而测试要遍历全表。
+ * 与 tests/channel/_fixture.ts 的分工：那份只管环境（临时目录、等待原语）。
+ * 本文件只提供「每个 type 的必填字段样本」——`requires` 逐条不同，而测试要遍历全表。
  *
  * D-25：样本字段从 `ROUTES[type].requires` **推导**，不为九个 type 各手写一份字面量。
  * 手写会漂：表里给某个 type 加一条必填，这里不会红，而 build 会——于是测试变成

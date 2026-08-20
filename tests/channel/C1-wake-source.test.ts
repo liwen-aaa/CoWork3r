@@ -11,7 +11,8 @@
 import { describe, expect, it } from "vitest";
 
 import { deliver, watchInbox } from "../../src/channel/index.ts";
-import { buildMessage, makeRoot, routeValidate, waitFor } from "./_fixture.ts";
+import { build, checkRoute } from "../../src/protocol/index.ts";
+import { makeRoot, waitFor } from "./_fixture.ts";
 
 describe("C1 唤醒来源可观测", () => {
   it("禁用 fs.watch 时，标记为 poll", async () => {
@@ -27,7 +28,7 @@ describe("C1 唤醒来源可观测", () => {
         onWake: (source) => wakes.push(source),
       });
 
-      deliver(root, buildMessage("task_assignment", "arch", { milestone: "M1" }), routeValidate);
+      deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1" }), checkRoute);
       await waitFor(() => wakes.length > 0, 3000);
 
       expect(wakes).toEqual(["poll"]);
@@ -67,7 +68,7 @@ describe("C1 唤醒来源可观测", () => {
 
     try {
       // 先落盘，后开监听 —— 窗口关闭期间到的消息
-      deliver(root, buildMessage("task_assignment", "arch", { milestone: "M1" }), routeValidate);
+      deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1" }), checkRoute);
 
       stop = watchInbox(root, "dev", () => {}, {
         watch: null,

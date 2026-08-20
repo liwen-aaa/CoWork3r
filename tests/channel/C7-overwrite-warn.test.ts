@@ -12,13 +12,14 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { channelPaths, deliver } from "../../src/channel/index.ts";
-import { buildMessage, makeRoot, routeValidate } from "./_fixture.ts";
+import { build, checkRoute } from "../../src/protocol/index.ts";
+import { makeRoot } from "./_fixture.ts";
 
 describe("C7 覆盖告警", () => {
   it("空 inbox → overwritten:false", () => {
     const { root, cleanup } = makeRoot("C7-empty");
     try {
-      const r = deliver(root, buildMessage("task_assignment", "arch", { milestone: "M1" }), routeValidate);
+      const r = deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1" }), checkRoute);
       expect(r).toEqual({ ok: true, overwritten: false });
     } finally {
       cleanup();
@@ -29,8 +30,8 @@ describe("C7 覆盖告警", () => {
     const { root, cleanup } = makeRoot("C7-over");
     const p = channelPaths(root);
     try {
-      deliver(root, buildMessage("task_assignment", "arch", { milestone: "M1", round: 1 }), routeValidate);
-      const r = deliver(root, buildMessage("task_assignment", "arch", { milestone: "M1", round: 2 }), routeValidate);
+      deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1", round: 1 }), checkRoute);
+      const r = deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1", round: 2 }), checkRoute);
 
       expect(r).toEqual({ ok: true, overwritten: true });
 

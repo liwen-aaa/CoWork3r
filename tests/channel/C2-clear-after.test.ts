@@ -9,7 +9,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { channelPaths, deliver, watchInbox } from "../../src/channel/index.ts";
-import { buildMessage, makeRoot, routeValidate, waitFor } from "./_fixture.ts";
+import { build, checkRoute } from "../../src/protocol/index.ts";
+import { makeRoot, waitFor } from "./_fixture.ts";
 
 describe("C2 处理后清空", () => {
   it("消息被处理后 inbox 为空", async () => {
@@ -23,8 +24,8 @@ describe("C2 处理后清空", () => {
     });
 
     try {
-      const msg = buildMessage("task_assignment", "arch", { milestone: "M1" });
-      deliver(root, msg, routeValidate);
+      const msg = build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1" });
+      deliver(root, msg, checkRoute);
 
       await waitFor(() => seen.length > 0, 5_000);
       // 清空发生在 onMessage 返回之后，给一个轮询周期

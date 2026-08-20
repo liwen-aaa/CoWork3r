@@ -13,7 +13,8 @@
 import { describe, expect, it } from "vitest";
 
 import { deliver, watchInbox } from "../../src/channel/index.ts";
-import { buildMessage, makeRoot, routeValidate, sleep } from "./_fixture.ts";
+import { build, checkRoute } from "../../src/protocol/index.ts";
+import { makeRoot, sleep } from "./_fixture.ts";
 
 describe("C6 两个监听者", () => {
   it("同一收件箱两个监听者：消息总共只被处理一次", async () => {
@@ -31,7 +32,7 @@ describe("C6 两个监听者", () => {
     });
 
     try {
-      deliver(root, buildMessage("task_assignment", "arch", { milestone: "M1" }), routeValidate);
+      deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1" }), checkRoute);
       await sleep(1_500); // 十个轮询周期，两边都有充分机会
 
       // 水位落盘且两个实例共享同一个文件，所以后到的那个看到 mtime <= processed

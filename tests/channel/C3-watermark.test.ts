@@ -14,7 +14,8 @@ import { readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { channelPaths, deliver, watchInbox } from "../../src/channel/index.ts";
-import { buildMessage, makeRoot, routeValidate, sleep, waitFor } from "./_fixture.ts";
+import { build, checkRoute } from "../../src/protocol/index.ts";
+import { makeRoot, sleep, waitFor } from "./_fixture.ts";
 
 describe("C3 水位标记", () => {
   it("重启后不重放旧消息", async () => {
@@ -28,7 +29,7 @@ describe("C3 水位标记", () => {
     });
 
     try {
-      deliver(root, buildMessage("task_assignment", "arch", { milestone: "M1" }), routeValidate);
+      deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1" }), checkRoute);
       await waitFor(() => first.length > 0, 5_000);
       stop1();
 
@@ -40,7 +41,7 @@ describe("C3 水位标记", () => {
       // （这是进程被杀在 C2 清空之前的形态：内容还在，而水位已经推过了。
       //   不能直接 writeFileSync 了事——那会给它一个比水位新的 mtime，
       //   于是它就是一条真的新消息，被处理是对的，测不到 C3。）
-      const stale = buildMessage("task_assignment", "arch", { milestone: "M1" });
+      const stale = build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1" });
       writeFileSync(p.inbox("dev"), JSON.stringify(stale), "utf-8");
       const old = (mark - 5_000) / 1_000; // utimes 收秒
       utimesSync(p.inbox("dev"), old, old);
@@ -76,7 +77,7 @@ describe("C3 水位标记", () => {
     try {
       // 手写一条 to 错的消息进 dev 的收件箱。deliver 不可能产出它（C8 会拦），
       // 所以只能直接落盘——外部工具或手改 JSON 的真实形态。
-      const wrong = { ...buildMessage("task_assignment", "arch", { milestone: "M1" }), to: "tester" };
+      const wrong = { ...build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1" }), to: "tester" };
       writeFileSync(p.inbox("dev"), JSON.stringify(wrong), "utf-8");
 
       await sleep(800); // 三个以上轮询周期

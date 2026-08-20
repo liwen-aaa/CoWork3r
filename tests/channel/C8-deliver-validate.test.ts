@@ -15,7 +15,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { channelPaths, deliver } from "../../src/channel/index.ts";
-import { buildMessage, makeRoot, rejectingValidate, routeValidate } from "./_fixture.ts";
+import { build, checkRoute } from "../../src/protocol/index.ts";
+import { makeRoot, rejectingValidate } from "./_fixture.ts";
 
 describe("C8 落盘前校验", () => {
   it("validate 返回 ok:false → deliver 也 ok:false，且文件未被写", () => {
@@ -24,7 +25,7 @@ describe("C8 落盘前校验", () => {
     try {
       const r = deliver(
         root,
-        buildMessage("task_assignment", "arch", { milestone: "M1" }),
+        build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1" }),
         rejectingValidate,
       );
 
@@ -43,8 +44,8 @@ describe("C8 落盘前校验", () => {
     const { root, cleanup } = makeRoot("C8-nooverwrite");
     const p = channelPaths(root);
     try {
-      deliver(root, buildMessage("task_assignment", "arch", { milestone: "M1", round: 1 }), routeValidate);
-      deliver(root, buildMessage("task_assignment", "arch", { milestone: "M1", round: 9 }), rejectingValidate);
+      deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1", round: 1 }), checkRoute);
+      deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1", round: 9 }), rejectingValidate);
 
       // 拒绝必须发生在写之前——否则「不写」等于「已经覆盖了再说不写」
       expect(JSON.parse(readFileSync(p.inbox("dev"), "utf-8")).round).toBe(1);
@@ -57,7 +58,7 @@ describe("C8 落盘前校验", () => {
     const { root, cleanup } = makeRoot("C8-accept");
     const p = channelPaths(root);
     try {
-      const r = deliver(root, buildMessage("task_assignment", "arch", { milestone: "M1" }), routeValidate);
+      const r = deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1" }), checkRoute);
       expect(r.ok).toBe(true);
       expect(JSON.parse(readFileSync(p.inbox("dev"), "utf-8")).type).toBe("task_assignment");
     } finally {
