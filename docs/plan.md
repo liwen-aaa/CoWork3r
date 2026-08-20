@@ -11,6 +11,11 @@
 成功 = 在一个新建的空项目里，从零接入并跑通一个里程碑的完整流转（分发 → 开发 → FAIL → 修 → PASS → 人工放行）。
 不做：第二个执行适配器（CI / 单窗口自动化）、wayfinder 票系统、S/L 档位、契约版本机制、独立合规检查器。
 
+**提交纪律（M1–M6 手工期）**：每里程碑三个 commit——测试（全红，证明断言未迁就实现）／实现（全绿）／文档收缩（D-06）。
+不 commit 红的实现。M6 之后 commit 权移交 tester `/pass`（见未决 P6）。
+
+**复用老仓库**：可近乎逐字照抄的部分已逐项列在 [`docs/inherited/reuse.md`](inherited/reuse.md)，实现时先查那份清单再动手写。
+
 ## 里程碑 M1 通道层可用
 
 ### 断言
@@ -134,6 +139,8 @@
 - P2 pi 的 `before_agent_start` 在 `--print` 模式（无 TUI）下是否照常触发 —— [auto] 待查 —— 前置：无
 - P3 单窗口降级要不要给 `dev-only` 启动脚本 —— [human] 归我 —— 前置：P2
 - P4 `docs/decisions.md` 从哪个里程碑开始写第一行 —— [human] 归我 —— 前置：无
+- P5 M6 那条人工断言用什么任务来跑 —— [human] 归我 —— 前置：无
+- P6 commit 权从手工移交 tester `/pass` 的分界点 —— [human] 归我 —— 前置：P5
 
 ## 说不清的
 
