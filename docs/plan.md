@@ -42,7 +42,9 @@
 - [auto] `npm run docs:protocol` 重跑后 `git diff --exit-code` 无输出（生成物与表一致）
 - [auto] `grep -rn 'to: "\(arch\|dev\|tester\|human\)"' src/ | grep -v protocol/routes.ts` 无输出
 - [auto] `grep -rn "buildMessage\|routeValidate" tests/` 无输出 —— M1 的临时 fixture 函数已换成 `import { build }` / `import { validate }`（本条是那两个函数的唯一机制落点：它们不是未决（已定怎么做）、不靠谁记得）
-- [human] dev 窗口的 `send_task` 工具面里看不到 `arch` 这个投递目标 —— schema 按角色生成是「越权在类型层不可能」的全部依据，我要开一次真窗口看工具描述
+
+> 本里程碑无 `[human]` 断言：原有一条「开真窗口看 dev 的 send_task 里没有 arch」已挪到 M6——
+> `send_task` 工具在 07-adapter 才注册，而它与 M6 那条「真开三窗口」看的是同一个东西（LLM 实际收到的工具面）。
 
 ### 涉及
 
@@ -121,6 +123,7 @@
 - [auto] A6 断言 `extensions/*.ts` 各 ≤ 30 行、`src/adapter/wire.ts` ≤ 120 行
 - [auto] A4 遍历 `flow.ts` 状态表全部 9 个 type
 - [auto] e2e 骨架：临时目录 fixture 项目跑完整一圈（分发 → 产出 → FAIL → 修 → PASS → `/pass` → 回 arch），断言每步的消息落点与状态变化
+- [human] dev 窗口的 `send_task` 工具面里看不到 `arch` 这个投递目标（**M2 移入**）—— P2 验的是 schema 对象的内容，而 LLM 看到的是 pi 序列化后的工具描述，中间可能丢字段、变形、截断。schema 按角色生成是「越权在类型层不可能」的全部依据
 - [human] 在一个新建空项目里真开三个窗口，跑通一个里程碑 —— 这是唯一能证明「它真的在运行」的事，mock-pi 永远证明不了
 
 ### 涉及

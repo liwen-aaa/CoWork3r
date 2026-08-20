@@ -15,3 +15,4 @@
 | 日期 | 定了什么 | 否决了 | 理由 |
 |---|---|---|---|
 | 2026-08-20 | 相对 import 一律带 `.ts` 扩展名，目录 import 写到 `index.ts`；`moduleResolution: nodenext` | 无扩展名 + `moduleResolution: bundler`（原写法） | 目标形态里**没有打包器**：pi 用 jiti 直接加载源码，人工验证脚本用裸 node 跑，两者都要求精确到文件。`bundler` 的含义是「假定有打包器帮你解析」，而那个前提我们没有——M1 的人工验证第一次用裸 node 跑就撞 `ERR_MODULE_NOT_FOUND`。老仓库是唯一在 pi 里真跑起来过的形态，它的 import 全带 `.ts`。读代码看不出这一层：无扩展名写法在 vitest 里完全正常 |
+| 2026-08-20 | PASS / FAIL 拆成两个 type（`verdict_pass` / `fix_request`），不做一个 type 的参数 | 老仓库的 `verdict` 参数写法 | 一个 type 两个目标地址（PASS→human、FAIL→dev），路由就只能在代码里 `if` 分流——而「代码里分流」正是那个 bug 的栖息地。拆开后每个 type 方向唯一，`to` 能由表决定。读 `ROUTES` 只看到九条并列，看不出为什么不合并 |

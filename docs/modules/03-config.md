@@ -149,5 +149,5 @@ tests/config/
 
 ---
 
-**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ [02-protocol](02-protocol.md) ｜ 03-config（本文）
+**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ 03-config（本文）
 **下一个模块**：04-plan（规划书解析：`[auto]`/`[human]` 断言语法、编号规则、冻结判定、未决表与 frontier）

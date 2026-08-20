@@ -11,7 +11,7 @@
 | 里程碑 | 内容 | 状态 |
 |---|---|---|
 | M1 | 通道层（消息落盘、唤醒、状态持久化） | ✅ 六条断言全齐（23 用例绿 + [人工凭证](docs/verification/M1.md)） |
-| M2 | 消息协议（路由表驱动） | 未开始 |
+| M2 | 消息协议（路由表驱动） | ✅ 五条 auto 全过（78 用例绿）；一条 human 已挪 M6 |
 | M3 | 配置与角色规约 | 未开始 |
 | M4 | 规划书解析（断言语法） | 未开始 |
 | M5 | 拦截链（五道 gate） | 未开始 |
@@ -37,6 +37,8 @@ npm run typecheck   # tsc --noEmit
 | `docs/modules/` | 架构：一模块一份。代码落地后逐份收缩（见 `disciplines.md` D-06） |
 | `docs/disciplines.md` | 32 条纪律，每条带判据与落点。落点写「规约」= 明确承认它会被跳过 |
 | `docs/plan.md` | 本项目规划书。断言即验收标准 |
+| `docs/protocol.md` | **生成物**（`npm run docs:protocol`）：通道表、流转图、各角色可发的 type。勿手改 |
+| `docs/decisions.md` | 决策记录，追加式。准入门槛见 `disciplines.md` D-13 —— 够格才写 |
 | `docs/inherited/` | 前身项目的交接与复用清单（`前身仓库 work-flow`，已留档） |
 | `templates/` | 规划书骨架 = 断言语法的可运行示例 |
 

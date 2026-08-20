@@ -28,7 +28,7 @@
 | # | 模块 | 状态 | 一句话 |
 |---|---|---|---|
 | 01 | channel | 🧹 | 消息写下 → 对方被唤醒读到，重启不丢、并发不乱。**文档已拆**：职责与边界 → [`src/channel/index.ts`](../../src/channel/index.ts) 文件头，磁盘布局 → `paths.ts`，单槽位取舍 → `inbox.ts`，C1–C8 设计点 → [`tests/channel/`](../../tests/channel/) 用例名与注释 |
-| 02 | [protocol](02-protocol.md) | ✅ | 谁能给谁发什么；路由/schema/文档都从一张表派生 |
+| 02 | protocol | 🧹 | 谁能给谁发什么；路由/schema/文档都从一张表派生。**文档已拆**：为什么独立一层 / 一表四处派生 / 不负责什么 → [`src/protocol/index.ts`](../../src/protocol/index.ts) 文件头，与老仓库的四处差异 → `routes.ts`，两个函数为何分开 → `build.ts`，P1–P5 设计点 → [`tests/protocol/`](../../tests/protocol/) 用例名与注释，通道表与流转图 → [`docs/protocol.md`](../protocol.md)（生成物） |
 | 03 | [config](03-config.md) | ✅ | 项目事实的唯一落点；配错必须吵，不配可以静默 |
 | 04 | [plan](04-plan.md) | ✅ | 规划书解析；`[auto]`/`[human]` 断言语法定义在这里 |
 | 05 | [gates](05-gates.md) | ✅ | 纯函数判定：断言可测、产出结构、快照、真跑命令、人的问题 |
