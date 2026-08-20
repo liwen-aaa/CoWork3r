@@ -1,7 +1,7 @@
 # 模块 01：channel（通道层）
 
 > **职责一句话**：把「一个角色写下的消息」变成「另一个角色被唤醒并读到它」，且重启不丢、并发不乱。
-> **依赖**：只有 `node:fs` / `node:path`。**不 import pi**，不 import 本项目其它模块。
+> **依赖**：只有 `node:fs` / `node:path`。**不 import pi**，不运行时 import 本项目其它模块（类型可 `import type`；C8 需要的 `validate` 由调用方注入）。
 > **读者**：要改通道的人 / agent。接入项目的使用者不需要读本文件。
 >
 > 老仓库对应物：`extensions/lib/agent-lib.ts` 第 1–405 行。行为对，结构是一团。
@@ -84,12 +84,23 @@ Windows 上 `fs.watch` 会漏事件——消息写进去了，回调不触发，
 
 ### C8 写盘前二次校验地址
 
-`deliver` 写盘前调 02-protocol 的 `validate`：`msg.to` 必须等于 `ROUTES[msg.type].to`，不等则**不写**。
+`deliver` 写盘前跑一次地址校验：`msg.to` 必须等于 `ROUTES[msg.type].to`，不等则**不写**。
 
 理由不是「防自己写错」，是防腻化：老仓库那个 bug 的形态正是上层代码绕过声明直写错地址，
 而七处声明全部正确。让唯一的落盘口自己把一道，上层就没有绕路。
 
-这不算「通道开始理解消息」：它不知道 `review_request` 是什么意思，只比对一张表。
+**校验函数由调用方注入，不是 import 进来的：**
+
+```ts
+export type Validate = (msg: Message) => { ok: true } | { ok: false; reason: string };
+export function deliver(root: string, msg: Message, validate: Validate): DeliverResult;
+```
+
+不写 `import { validate } from "../protocol"` 的理由：那是值导入，本层就不再零依赖，
+而「可在普通 node 进程里直接测」是本层存在的理由之一。注入后 C8 的测试可以传一个
+只认几条路由的 fake，不必等 M2。它与 D-07（pi 只能作为参数进来）是同一个形状。
+
+这不算「通道开始理解消息」：它不知道 `review_request` 是什么意思，只调一个别人给的函数。
 
 ### C6 同角色单实例
 
@@ -123,7 +134,9 @@ export function readState(root: string): State;
 export function writeState(root: string, patch: Partial<State>): State;
 
 // 收件箱
-export function deliver(root: string, msg: Message): DeliverResult;
+export type Validate = (msg: Message) => { ok: true } | { ok: false; reason: string };
+// C8：校验函数由调用方注入（实际传 02-protocol 的 validate）。本层不 import 它。
+export function deliver(root: string, msg: Message, validate: Validate): DeliverResult;
 export function peek(root: string, role: Role): Message | null; // 读不消费
 export function clearIfSame(root: string, role: Role, msg: Message): boolean;
 
@@ -138,7 +151,7 @@ export function watchInbox(root: string, role: Role, onMessage: (m: Message) => 
 export function bumpCounters(root: string, role: Role, ids: string[], threshold: number): string[];
 ```
 
-`Message` 与 `Role` 的类型定义在 **02-protocol**，本层 `import type` 取用（见 `modules/README.md` 类型依赖说明）。只搬运不解释——通道不关心消息是什么意思。
+`Message` 与 `Role` 的类型定义在 **02-protocol**，本层 `import type` 取用（见 `modules/README.md` 类型依赖说明）。只搬运不解释——通道不关心消息是什么意思。`Validate` 同理：本层定义它的**形状**，不知道它的**内容**。
 
 `watchInbox` 返回 `Stop`（一个关掉定时器和 watcher 的函数）：测试里必须能停，否则进程不退出。老仓库没有这个，测试靠进程结束兜底。
 
@@ -190,7 +203,7 @@ tests/channel/
 ├── C5-counters.test.ts          跨「重启」累计到阈值
 ├── C6-two-listeners.test.ts     两个监听者 → 消息只被其中一个处理（固定事实，非期望行为）
 └── C7-overwrite-warn.test.ts    inbox 非空时 deliver → overwritten=true；空 inbox → false
-└── C8-deliver-validate.test.ts  msg.to 与 ROUTES 不一致 → ok:false 且文件未被写
+└── C8-deliver-validate.test.ts  注入的 validate 返回 ok:false → deliver 也 ok:false 且文件**未被写**
 ```
 
 每个用例在 `mkdtemp` 临时目录里跑，**不得在仓库根写文件**——老仓库早期测试的 `ensureDirs()` 副作用曾污染模板库。
@@ -199,7 +212,7 @@ tests/channel/
 
 | 谁 | 用本层什么 | 不该做什么 |
 |---|---|---|
-| 02-protocol | `import type` 类型 + `validate`（C8） | 不 import 本层（保持零依赖） |
+| 02-protocol | 本层 `import type` 它的类型；它的 `validate` 由上层注入进 `deliver`（C8） | 两边都不运行时 import 对方 |
 | 05-gates | `writeJsonAtomic` 存基线 | 不直接读写 inbox |
 | 07-adapter | `watchInbox` / `deliver` / `readState` | 不自己拼路径、不自己 `writeFileSync` |
 

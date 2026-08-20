@@ -61,6 +61,12 @@ agent_end            → 未投递提醒（双保险第二道）
 
 外加 `watchInbox`（01-channel）作为唤醒入口。
 
+### pi 只以类型存在（D-07）
+
+`src/adapter/` 对 pi 的引用只能是 `import type { ExtensionAPI }`。值导入（常量、工厂函数）一律不行，`pi` 与 handler 拿到的 `ctx` 必须一路作为参数传进来，**不得存进模块作用域**。
+
+理由不是可测试性这种空话：模块级可变状态一出现，三个角色同进程加载时就共享同一份，`tests/e2e` 整条路不成立。而这一条是事后补不回来的——mock-pi 需要哪几个 API 可以到 M6 再读 `wire.ts` 写出来，注入缝不行。守它的是 A9。
+
 ### tool_call：查表跑链
 
 ```ts
@@ -213,10 +219,16 @@ tests/adapter/
 ├── A5-threshold.test.ts        同一 issue 第 3 轮 → 自动发 escalation（跨「重启」）
 ├── A6-thin.test.ts             三个 extensions/*.ts 各 ≤ 30 行；wire.ts ≤ 120 行
 ├── A7-status-lines.test.ts     四行都在；未决数与 frontier 一致
-└── A8-no-literals.test.ts      grep：adapter 下无 to: "<role>" 与 "to-*.json" 字面量
+├── A8-no-literals.test.ts      grep：adapter 下无 to: "<role>" 与 "to-*.json" 字面量
+└── A9-injection-seam.test.ts   pi 在 src/ 里只以类型存在（grep 非 import type 的值导入）；
+                               同进程 wire() 三次各传 fake pi → 三份 channelPaths 的 root 互不相同，
+                               且 A 的 fake pi 上没收到过 B 注册的工具
 ```
 
 **A6 是抗腐化的。** 老仓库这三个文件从简短涨到 976 行，涨的全是本该在下层的判断。行数上限比评审有效——超了就说明有东西放错了层。
+
+**A9 是 e2e 的前提，不是洁癖。** 它两半分工：grep 那半水位线很低（只拦值导入，`import type` 合法），
+同进程那半才是真判据：root 互不相同验状态隔离，工具注册不串验注册隔离。两半全绿才能说 M6 的 e2e 能写。
 
 ---
 

@@ -15,7 +15,7 @@
 
 ### 断言
 
-- [auto] `npm test -- tests/channel` 全绿，且用例文件恰好覆盖 C1–C8（8 个约束、9 个文件）
+- [auto] `npm test -- tests/channel` 全绿，且用例文件恰好覆盖 C1–C8（8 个约束、10 个文件）
 - [auto] 存在 `src/channel/{paths,atomic,state,inbox,watch,counters,index}.ts`
 - [auto] `grep -rln "writeFileSync" src/ | grep -v "channel/atomic.ts"` 无输出
 - [auto] `grep -rln "to-dev.json\|to-arch.json\|to-tester.json\|to-human.json" src/ | grep -v "channel/paths.ts"` 无输出
@@ -106,7 +106,9 @@
 
 ### 断言
 
-- [auto] `npm test -- tests/adapter tests/e2e` 全绿，含 A1–A8
+- [auto] `npm test -- tests/adapter tests/e2e` 全绿，含 A1–A9
+- [auto] A9 前半：`grep -rn "@earendil-works/pi-coding-agent" src/ | grep -v "import type"` 无输出 —— 本条的意思是「pi 在 `src/` 里只以类型存在」，`import type { ExtensionAPI }` 是允许的、被禁的是值导入（常量、工厂函数、任何有运行时的东西）
+- [auto] A9 后半：同进程 `wire()` 三次、各传一个 fake pi → 三份 `channelPaths` 的 root 互不相同（状态隔离），且 A 的 fake pi 上没有收到过 B 注册的工具（注册隔离）
 - [auto] A1 断言 `WF_ROLE="arch "`（尾随空格）时告警文本含 `"arch "`（带引号的 JSON 表示）
 - [auto] A6 断言 `extensions/*.ts` 各 ≤ 30 行、`src/adapter/wire.ts` ≤ 120 行
 - [auto] A4 遍历 `flow.ts` 状态表全部 9 个 type
@@ -124,6 +126,7 @@
 ### 风险与未决
 
 - **mock-pi 的保真度**：e2e 用同进程 mock 驱动三个适配器，它验的是接线正确，不验 pi 真实行为（事件时序、`sendUserMessage` 语义、系统提示注入链）。这是 `[human]` 那条存在的理由，不能用 e2e 顶掉。
+- **mock-pi 的 API 清单不预先定**：它等于「wire.ts 碰了 pi 对象上的哪几个方法」，M1–M5 之前写出来是猜。事后补不回来的只有注入缝，那一条已由 A9 钉住（D-07）。
 
 ## 未决
 
