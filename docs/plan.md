@@ -30,6 +30,8 @@
 ### 涉及
 
 - `src/channel/`、`tests/channel/`
+- `src/protocol/{routes,message}.ts` —— **仅** `ROUTES` 表与类型定义；`build` / `validate` / schema 生成属 M2，M1 不写
+- （上一行的方向是依赖图告诉我们的：01-channel 从 02-protocol `import type`，C8 要比对 `ROUTES[type].to`。写本文时只看了「M2 依赖 M1」这一个方向，漏了类型侧的反向依赖。C8 的校验在 M1 就是一行比对，M2 再收进 `validate`）
 
 ## 里程碑 M2 协议表驱动路由
 
@@ -39,6 +41,7 @@
 - [auto] P1 遍历 `ROUTES` 全部 9 条，逐条断言消息落在 `ROUTES[type].to` 对应的收件箱文件
 - [auto] `npm run docs:protocol` 重跑后 `git diff --exit-code` 无输出（生成物与表一致）
 - [auto] `grep -rn 'to: "\(arch\|dev\|tester\|human\)"' src/ | grep -v protocol/routes.ts` 无输出
+- [auto] `grep -rn "buildMessage\|routeValidate" tests/` 无输出 —— M1 的临时 fixture 函数已换成 `import { build }` / `import { validate }`（本条是那两个函数的唯一机制落点：它们不是未决（已定怎么做）、不靠谁记得）
 - [human] dev 窗口的 `send_task` 工具面里看不到 `arch` 这个投递目标 —— schema 按角色生成是「越权在类型层不可能」的全部依据，我要开一次真窗口看工具描述
 
 ### 涉及
