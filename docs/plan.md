@@ -22,8 +22,8 @@
 
 - [auto] `npm test -- tests/channel` 全绿，且用例文件恰好覆盖 C1–C8（8 个约束、10 个文件）
 - [auto] 存在 `src/channel/{paths,atomic,state,inbox,watch,counters,index}.ts`
-- [auto] `grep -rln "writeFileSync" src/ | grep -v "channel/atomic.ts"` 无输出
-- [auto] `grep -rln "to-dev.json\|to-arch.json\|to-tester.json\|to-human.json" src/ | grep -v "channel/paths.ts"` 无输出
+- [auto] `grep -rln "writeFileSync" src/ | grep -v "channel/atomic.ts"` 无输出（**注释也算违反**：扫源码文本不解析 AST，因为改名时 grep 不到注释里那个）
+- [auto] `grep -rln "to-dev.json\|to-arch.json\|to-tester.json\|to-human.json" src/ | grep -v "channel/paths.ts"` 无输出（同上，注释也算）
 - [auto] `npm test -- tests/channel` 进程在 30 秒内自行退出（`Stop` 真的关掉了定时器）
 - [human] 拔掉 `fs.watch` 后，在真实 pi 进程的窗口里投一条消息，不碰键盘，等它被轮询处理（≥10s）。日志里要有明确的轮询触发标记，不是 mock 定时器凑出来的 —— C1 验函数行为，这条验真实事件循环里 `setInterval` 没被饿死
 
@@ -141,7 +141,6 @@
 - P1 规约注入被后续扩展替换掉时，MARK 自检能不能真的发现 —— [auto] 待查 —— 前置：无
 - P2 pi 的 `before_agent_start` 在 `--print` 模式（无 TUI）下是否照常触发 —— [auto] 待查 —— 前置：无
 - P3 单窗口降级要不要给 `dev-only` 启动脚本 —— [human] 归我 —— 前置：P2
-- P4 `docs/decisions.md` 从哪个里程碑开始写第一行 —— [human] 归我 —— 前置：无
 - P5 M6 那条人工断言用什么任务来跑 —— [human] 归我 —— 前置：无
 - P6 commit 权从手工移交 tester `/pass` 的分界点 —— [human] 归我 —— 前置：P5
 
