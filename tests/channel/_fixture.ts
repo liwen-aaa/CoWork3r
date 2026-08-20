@@ -27,6 +27,8 @@ import type { Validate } from "../../src/channel";
 /**
  * 每个用例一个临时根目录。
  *
+ * **不得在仓库根写文件**——老仓库早期测试的 `ensureDirs()` 副作用曾污染模板库。
+ *
  * 不用 `process.chdir`（老仓库 verify-extensions [6] 组的做法）——它是进程全局态，
  * 与 vitest 并行执行相冲。root 一律作为参数传进被测函数。
  */

@@ -155,5 +155,5 @@ tests/roles/
 
 ---
 
-**已写模块**：[01-channel](01-channel.md) ｜ [02-protocol](02-protocol.md) ｜ [03-config](03-config.md) ｜ [04-plan](04-plan.md) ｜ [05-gates](05-gates.md) ｜ 06-roles（本文）
+**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ [02-protocol](02-protocol.md) ｜ [03-config](03-config.md) ｜ [04-plan](04-plan.md) ｜ [05-gates](05-gates.md) ｜ 06-roles（本文）
 **下一个模块**：07-adapter（三个薄扩展：接线、状态流转、escalation 形状、`/status` 与启动简报）

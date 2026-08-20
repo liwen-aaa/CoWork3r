@@ -167,5 +167,5 @@ tests/protocol/
 
 ---
 
-**已写模块**：[01-channel](01-channel.md) ｜ 02-protocol（本文）
+**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（本文）
 **下一个模块**：03-config（项目事实的唯一落点：字段表、诊断分级、SKILL 去占位符化）

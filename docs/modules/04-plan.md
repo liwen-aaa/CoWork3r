@@ -193,5 +193,5 @@ tests/plan/
 
 ---
 
-**已写模块**：[01-channel](01-channel.md) ｜ [02-protocol](02-protocol.md) ｜ [03-config](03-config.md) ｜ 04-plan（本文）
+**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ [02-protocol](02-protocol.md) ｜ [03-config](03-config.md) ｜ 04-plan（本文）
 **下一个模块**：05-gates（纯函数判定：断言可测、产出结构随断言数缩放、生产文件快照、真跑测试）

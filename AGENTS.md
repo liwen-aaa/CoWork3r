@@ -9,7 +9,7 @@
 ## 按需
 
 - [`docs/modules/README.md`](docs/modules/README.md) — 依赖图 + 当前进度
-- `docs/modules/NN-*.md` — **只读你在改的那一个**（八份，索引见上）
+- `docs/modules/NN-*.md` — **只读你在改的那一个**（模块完工即拆，索引见上）
 - [`docs/plan.md`](docs/plan.md) — 当前里程碑的断言 = 验收标准
 - [`docs/inherited/reuse.md`](docs/inherited/reuse.md) — 写实现前查：这段能不能照抄老仓库
 
