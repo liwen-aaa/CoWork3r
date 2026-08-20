@@ -10,8 +10,9 @@
 
 | 目标 | 老仓库位置 | 为什么不重写 |
 |---|---|---|
-| `channel/watch.ts` 的 `check()` + 三个触发点 | `agent-lib.ts` `watchInbox` | 四个数字全是试出来的：启动补收 `setTimeout(500)`、事件后 `setTimeout(200)` 等写入完成、轮询 `setInterval(10000)`、水位 `mtime <= processed`。凭记忆重写必错一个 |
-| 条件清空的五字段比对 | 同上，`now.from/type/milestone/round` | 只清不比对 → 误删并发新消息；只比对不清 → 旧消息重放。**两半都是必需的**，而且这个结论是踩了才知道的 |
+| `channel/watch.ts` 的 `check()` 函数体 + 三个触发时机 | `agent-lib.ts` `watchInbox` | 三个数字全是试出来的：启动补收 `setTimeout(500)`、事件后 `setTimeout(200)` 等写入完成、轮询 `setInterval(10000)`。凭记忆重写必错一个。<br>❕ **只照抄 `check()` 与时机，触发器的注册方式必须重写**：老仓库的 `fs.watch(...)` 无句柄、`setInterval` 不存返回值、`watchInbox` 无返回值——**建了就关不掉**。照抄等于把「测不了」一起抄进来（证据见下面那条注释）。新实现必须存句柄并返回 `Stop`（`clearInterval` + `watcher.close()` + 清未到期的 `setTimeout`） |
+| 水位判据 `mtime <= processed` | 同上 | 不是魔数，是判据（C3）。连带一条：`if (!msg \|\| msg.to !== role) return;` **在标水位之前**——不属于自己的消息不认且不推水位，下一轮仍会重读。这是 C8 的读侧（C8 管写入口） |
+| 条件清空的四字段比对 | 同上，`now.from/type/milestone/round` | 只清不比对 → 误删并发新消息；只比对不清 → 旧消息重放。**两半都是必需的**，而且这个结论是踩了才知道的。<br>（原本表写「五字段」，源码比的是四个；`to` 已在前一步校过） |
 | `atomic.ts` | `writeState` / `writeMessage` / `writeChangeBaseline` | `写 .tmp → rename` 三行，无可改进 |
 | `plan/parse.ts` 的 CRLF 归一 | `parseTicketFrontmatter` 首行 | `content.replace(/\r\n/g,"\n").replace(/\r/g,"\n")`。Windows text-mode 写入会改行尾，`(.*)$` 不匹配 `\r` 结尾——老仓库为此坏过一次票解析 |
 | `gates/run-command.ts` | `runTestCommand` | 超时 + `maxBuffer` 10MB + 输出只留尾部 800 字符 + `catch` 里合并 stdout/stderr。四件事都是被输出撑爆或被卡死之后加的 |
@@ -41,10 +42,39 @@
 | `adopt.mjs` | 294 行 | 生成器的前提是「每项目一份定制副本」。占位符归零后前提不成立 |
 | 六份契约 + `verify-contracts.mjs` + `MANIFEST.json` | `contracts/`、`scripts/` | 建它们的理由是「无 git 会丢全文」。现在有 git |
 
-## 一件必须做的核对
+## 一件必须做的核对 —— 已做（M1 开工前）
 
-`verify-extensions.mjs` 的 131 项里，有多少是在测**行为**、多少是在测**它自己那套 mock 的形状**——这个比例现在不知道。
+读了 `verify-extensions.mjs` 的 17 个组名与 [1]–[6] 的源码，加 `verify-inbox-clear.mjs` 全文。
 
-M1 开始前值得花一次：读那 17 组的组名和断言文本，把「测行为」的那些抄进新测试的用例清单。这比我凭记忆列 C1–C8 更可靠——那 131 项里可能有我没想到的边界。
+**结论：131 项里通道层只占 [3][6] 两组 + inbox-clear 的两个场景，其余全在上层**
+（[8][9] wayfinder、[12] plan gate、[14] 产出结构、[15] 配置诊断、[16] 契约合规、[17] 约定台账——
+后三组对应的东西在新设计里已被砍掉或换了形状）。
 
-**但不要 import 它、不要跑它。** 它依赖老结构（模块顶层实例化 + cache-bust），跑不起来也不该跑起来。它是一份要读的规格，不是一个要通过的测试。
+逐条对过 C1–C8，**没有第九条约束**（所以 plan.md M1 断言节不需要动，D-15）。
+捞到两个 01-channel.md 未写的实现细节：一个已归入上面的「水位判据」行，另一个在下面。
+
+### 空吞异常的两处：抄行为，不抄静默
+
+`markProcessed` 与清空 inbox 都是 `try {} catch {}`。**行为对**（水位写失败不该让消息处理崩掉），
+但空吞正是 05-gates 那条教训的形状：老仓库的防偷懒 gate 因 `catch {}` 静默失效过，而且是人审查时发现的，
+不是它自己报的。新实现：吞异常，但留一条可观测记录。
+
+### 不要抄的那个隔离手法
+
+[6] 组头上这条注释是 A9 的第二份证据：
+
+```
+// 2026-08-18：用临时目录隔离本用例的 watchInbox 实例。
+// 背景：前序用例（[5]）创建的 dev 实例的 fs.watch 仍监听真实 MSG_DIR，
+//       会与本用例实例竞态处理消息
+```
+
+它用 `process.chdir` 到临时目录「躲开」——躲的是自己没有 `Stop` 这件事。
+前一个用例建的定时器在下一个用例里还活着、还在抢消息。
+本文把「模块顶层实例化」列为 A9 要防的东西，这条是它的**第二个证据面：不光加载时机，还有生命周期**。
+
+新测试靠 `Stop` + `mkdtemp` 隔离，**不得用 `process.chdir`**（进程全局态，与 vitest 并行相冲）。
+
+**两份脚本都不要 import、不要跑。** 它们依赖老结构（模块顶层实例化 + cache-bust），
+跑不起来也不该跑起来。它们是要读的规格，不是要通过的测试。
+
