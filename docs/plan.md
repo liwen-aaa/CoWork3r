@@ -61,8 +61,10 @@
 - [auto] `npm test -- tests/config tests/roles` 全绿，含 G1–G6、R1–R6
 - [auto] G5 区分两种情况：`test: null` → 诊断级别 `info`；`test` 字段缺失 → `fatal`
 - [auto] G2 断言配置语法错时 `cfg === null`（不是 `{}`）
-- [auto] `grep -rn "<[A-Z_]\{2,\}>" src/roles/` 无输出（规约零占位符）
-- [auto] `wc -l src/roles/*.md` 每份 ≤ 40 行
+- [auto] `src/roles/{arch,dev,tester}.md` 三份文件存在（拆自下一条：文件缺失与内容超标红因不同，混在一条里看不出区别）
+- [auto] `wc -l src/roles/*.md` 每份 ≤ 40 行（老仓库三份 SKILL 是 72/81/89，涨的全是流程说明与项目事实）
+- [auto] `grep -rn "<[A-Z_]\{2,\}>" src/roles/` 无输出（规约零占位符——项目事实只从 config 注入）
+- [auto] R3/R5 用 fake event 测纯函数 `buildSystemPrompt(role, notes, base)`：返回值以 base 开头（是追加不是替换）；特征串缺失时能被检出。真正挂到 `before_agent_start` 属 M6
 - [human] 三份规约读起来是「你是谁」而不是「系统怎么工作」 —— 老仓库 242 行里一半是流程说明，这个膨胀无法用行数以外的方式检测，我得自己读一遍
 
 ### 涉及
