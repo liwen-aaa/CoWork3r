@@ -8,23 +8,21 @@
 
 | 里程碑 | 内容 | 断言 | 用例 | 状态 |
 |---|---|---|---|---|
-| M1 | 通道层可用 | 5 auto + 1 human | 23/23 绿（11 文件） | 🚧 在建 |
-| M2 | 协议表驱动路由 | 5 auto | 55/55 绿（5 文件） | 🚧 在建 |
-| M3 | 配置与规约 | 7 auto + 1 human | 57/57 绿（10 文件） | 🚧 在建 |
+| M1 | 通道层可用 | 5 auto + 1 human | 23/23 绿（11 文件） | ✅ 已验收 |
+| M2 | 协议表驱动路由 | 5 auto | 55/55 绿（5 文件） | ✅ 已验收 |
+| M3 | 配置与规约 | 7 auto + 1 human | 57/57 绿（10 文件） | ✅ 已验收 |
 | M4 | 规划书解析 | 5 auto + 1 human | — | ⬜ 未开始 |
 | M5 | 拦截链 | 6 auto + 1 human | — | ⬜ 未开始 |
 | M6 | 三窗口跑通 | 7 auto + 2 human | — | ⬜ 未开始 |
 
-已验收 0/6 个里程碑。
+已验收 3/6 个里程碑。
 
 ## 文档收缩（D-06）
 
-八份模块文档已拆 **2** 份，剩 **6** 份：
+八份模块文档已拆 **4** 份，剩 **4** 份：
 
-- `docs/modules/03-config.md`
 - `docs/modules/04-plan.md`
 - `docs/modules/05-gates.md`
-- `docs/modules/06-roles.md`
 - `docs/modules/07-adapter.md`
 - `docs/modules/08-dist.md`
 

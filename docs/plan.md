@@ -24,7 +24,7 @@
 
 **复用老仓库**：可近乎逐字照抄的部分已逐项列在 [`docs/inherited/reuse.md`](inherited/reuse.md)，实现时先查那份清单再动手写。
 
-## 里程碑 M1 通道层可用
+## 里程碑 M1 通道层可用 ✅
 
 ### 断言
 
@@ -41,7 +41,7 @@
 - `src/protocol/{routes,message}.ts` —— **仅** `ROUTES` 表与类型定义；`build` / `validate` / schema 生成属 M2，M1 不写
 - （上一行的方向是依赖图告诉我们的：01-channel 从 02-protocol `import type`，C8 要比对 `ROUTES[type].to`。写本文时只看了「M2 依赖 M1」这一个方向，漏了类型侧的反向依赖。C8 的校验在 M1 就是一行比对，M2 再收进 `validate`）
 
-## 里程碑 M2 协议表驱动路由
+## 里程碑 M2 协议表驱动路由 ✅
 
 ### 断言
 
@@ -62,7 +62,7 @@
 
 - M1
 
-## 里程碑 M3 配置与规约
+## 里程碑 M3 配置与规约 ✅
 
 ### 断言
 

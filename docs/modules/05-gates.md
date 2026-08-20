@@ -171,5 +171,5 @@ tests/gates/
 
 ---
 
-**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ [03-config](03-config.md) ｜ [04-plan](04-plan.md) ｜ 05-gates（本文）
+**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ 03-config（已收缩进 `src/config/`） ｜ [04-plan](04-plan.md) ｜ 05-gates（本文）
 **下一个模块**：06-roles（三份角色规约 + system prompt 注入 + 注入自检）

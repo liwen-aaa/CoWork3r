@@ -1,0 +1,13 @@
+{
+  "plan": "docs/plan.md",
+  "source": "src",
+  "test": "npm test",
+
+  "testTimeoutMs": 120000,
+  "testPass": "(passed|PASS)",
+  "gate": "npm run build",
+  "gatePass": "(built|ok)",
+  "maxRounds": 5,
+
+  "roleNotes": "本仓库是 <技术栈>。改 <某文件> 前先看 <某文档>。<某类文件> 一律不手改。"
+}
