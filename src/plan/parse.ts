@@ -315,10 +315,10 @@ export function checkAssertion(a: Assertion): { ok: boolean; reason?: string } {
 /** arch 分发前调它：未 passed + 至少一条断言 + 每条 checkAssertion 通过 */
 export function checkMilestone(m: Milestone): { ok: boolean; reason?: string } {
   if (m.passed) {
-    return { ok: false, reason: `里程碑 ${m.id} 已验收，节已冻结（D-14）` };
+    return { ok: false, reason: `里程碑 ${m.id} 已验收，断言节已冻结。要改断言只能由人改（在规划书的「风险与未决」节写清怎么改，然后升级给人）` };
   }
   if (m.assertions.length === 0) {
-    return { ok: false, reason: `里程碑 ${m.id} 没有断言` };
+    return { ok: false, reason: `里程碑 ${m.id} 没有断言。在它的断言节至少写一条：以 [auto] 或 [human] 开头，[auto] 要带可运行命令或可检查的路径` };
   }
   const bad = m.assertions.map((a) => checkAssertion(a)).filter((r) => !r.ok);
   if (bad.length > 0) {

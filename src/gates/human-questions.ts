@@ -42,7 +42,7 @@ export function checkHumanQuestions(questions: string[], m: Milestone): Result {
       NAME,
       `questions 没覆盖这几条 [human] 断言：${miss.join("、")}。` +
         `每条一个问题，带上编号——通用方向（「结构 / 内容实质 / 引用真实性」这类）不算：` +
-        `老仓库给的就是那三条，四个里程碑没有一个缺陷是人工关卡抓到的`,
+        `问题必须具体到这条断言，让人能直接回答是或不是`,
     );
   }
 
