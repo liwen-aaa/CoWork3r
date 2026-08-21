@@ -26,6 +26,7 @@ import { buildSystemPrompt } from "../roles/index.ts";
 import type { SpecRole } from "../roles/index.ts";
 import { bootBriefing } from "./status.ts";
 import { FLOW } from "./flow.ts";
+import { registerCommands } from "./commands.ts";
 
 type WindowRole = Exclude<Role, "human">;
 
@@ -65,6 +66,9 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
       return { content: [{ type: "text", text: "已投递" }], details: {} };
     },
   });
+
+  // 六个命令：/status /pass /fail /role /doctor /research（集中注册，见 commands.ts）
+  registerCommands(role, pi);
 
   pi.on("session_start", (_event, ctx) => {
     const { cfg, diagnostics } = inspectConfig(ctx.cwd);
