@@ -14,6 +14,24 @@
 八份架构文档已完整（`docs/modules/`），代码从 M1 开始逐层落地。
 M6 之前无法接入任何项目。
 
+## 当前等你拍板的事（决策者入口）
+
+> 六里程碑中 M1–M5 已验收，M6 在建（`docs/progress.md`，生成物）。
+> 下面每件事都有**权威落点**——判定写在落点文件里，本表不重复内容（D-04），只指路。
+
+| 事 | 现在是什么状态 | 你要做什么 | 落点（判定写这里） |
+|---|---|---|---|
+| ① M5 验收判定 | tester 三修复轮已完成，凭证待签 | 读 `M5-wording.md`（20 条实跑拦截文案），签 PASS/FAIL | [`docs/verification/M5.md`](docs/verification/M5.md) |
+| ② M6 修复轮判定 | tester 验出 3 个真 bug 已修（schema artifact / 自检未接线 / 单 type 投递） | 读 `M6-fixes.md` 的三修复记录，签 PASS/FAIL | [`docs/verification/M6-fixes.md`](docs/verification/M6-fixes.md) |
+| ③ M6.5 判定 | dev 工具面无 arch 目标（真进程已验），凭证待签 | 复核凭证里的验证输出，签 PASS/FAIL | [`docs/verification/M6.md`](docs/verification/M6.md)（断言一） |
+| ④ M6.6 真跑 | launch 就绪，步骤已含 FAIL→修（P5 判定） | 真开三窗口跑通一个里程碑，按 M6.md 步骤 10 步 | [`docs/verification/M6.md`](docs/verification/M6.md)（断言二） |
+| ⑤ 未决 P3/P5/P7 | arch 已给倾向（P5=含 FAIL→修、P7=不进读序、P3=不加脚本），条目已从未决表删除 | 确认或驳回 arch 的判定；P5 已体现在 M6.md 步骤里 | `docs/plan.md` 的「提交纪律」节与「不做」节 |
+| ⑥ 注入自检断言缺口 | 实现已接线（agent_start 自检 + A9b 测试），但 plan.md 断言表没钉住它 | 三选一：①补 [auto] 断言 ②接受缺口删 R5 注释 ③挪后续 | `docs/plan.md` 风险节「注入自检未接通」条 |
+| ⑦ schema↔gates 一致性缺口 | 通道已通（artifact 已加），但无自动化测试防回退 | 二选一：补测试（派 dev）/ 接受为已知风险 | `docs/plan.md` 风险节「schema↔gates 一致性测试缺口」条 |
+
+**完成 ①–④ 后**：M6 打 ✅，`npm run docs:progress` 重生进度表，六里程碑全验收。
+**⑤–⑦ 是收尾决策**，不阻塞 M6 验收，但拖久了会丢失上下文（判定只活在对话里）。
+
 ## 现在能跑什么
 
 ```bash
@@ -43,6 +61,7 @@ npm run docs:protocol # 重生协议文档
 
 | 你是 | 读 |
 |---|---|
+| 要验收里程碑 / 拍未决判定 | 本文「当前等你拍板的事」表，逐项落点 |
 | 想懂它为什么这么设计 | [`docs/modules/README.md`](docs/modules/README.md) 的依赖图，然后挑一层看 |
 | 要动代码 | [`AGENTS.md`](AGENTS.md)（读序）+ [`docs/disciplines.md`](docs/disciplines.md)（动手前查相关条目） |
 | 想知道前身踩过什么坑 | [`docs/inherited/reuse.md`](docs/inherited/reuse.md)——哪些照抄、哪些只抄判据、哪些别碰 |

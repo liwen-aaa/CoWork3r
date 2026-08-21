@@ -27,18 +27,6 @@ function pendingOf(which: "own" = "own") {
   }
 }
 
-/** 同上，外加原文行——用于「文件里写了的东西必须被解出来」这类交叉核对 */
-function pendingWithSource() {
-  const f = derive("own", (lines) => lines); // 恒等 derive：不改一个字，只为拿到行
-  try {
-    const r = parsePlan(f.root, f.rel);
-    if (!r.ok) throw new Error(`前提失败：${JSON.stringify(r.errors)}`);
-    return { pending: r.plan.pending, lines: f.lines };
-  } finally {
-    f.cleanup();
-  }
-}
-
 describe("L7 未决表解析（pending）", () => {
   it("本项目 plan.md 的未决表解出 id，且 id 从文本读而非按位置分配", () => {
     const p = pendingOf();
@@ -67,28 +55,43 @@ describe("L7 未决表解析（pending）", () => {
   });
 
   it("三段式解出 kind；原文写了「归X」就必须解出 owner", () => {
-    const { pending, lines } = pendingWithSource();
+    // 真实 plan.md 当前只有 [auto] answered 条目（P1/P2 已定案，human 条目已删行）
+    // ——不依赖当前形态，把 P1 的标记段重置为 [human] 归我，构造「kind + owner」
+    // 的确定输入（D-25：仍从真实行出发，只动标记段）
+    const f = derive("own", (lines) => {
+      const at = lineOf(lines, /^- P1 /);
+      lines[at] = lines[at]!.replace(/\[auto\]\s*已回\s*→\s*\S+/, "[human] 归我");
+      return lines;
+    });
+    try {
+      const r = parsePlan(f.root, f.rel);
+      if (!r.ok) throw new Error(`前提失败：${JSON.stringify(r.errors)}`);
+      const pending = r.plan.pending;
+      const lines = f.lines;
 
-    const human = pending.filter((x) => x.kind === "human");
-    expect(human.length).toBeGreaterThan(0);
+      const human = pending.filter((x) => x.kind === "human");
+      expect(human.length).toBeGreaterThan(0);
 
-    // 判据取自**原文那一行**，不取自解析结果：只断言「有 owner 的都非空」
-    // 等于让实现自己定义通过条件——owner 全丢也能绿。
-    // 这条第一版就是这么被写松的，而松掉的正好是当时唯一的真 bug：
-    // P8 的正文里含一个 `——`，按位置切段时标记段被挤走，owner 静默消失。
-    for (const x of pending) {
-      const src = lines[x.line - 1] ?? "";
-      const wrote = /归(\S+)/.exec(src);
-      if (wrote) expect(x.owner).toBe(wrote[1]);
-      else expect(x.owner).toBeUndefined();
+      // 判据取自**原文那一行**，不取自解析结果：只断言「有 owner 的都非空」
+      // 等于让实现自己定义通过条件——owner 全丢也能绿。
+      // 这条第一版就是这么被写松的，而松掉的正好是当时唯一的真 bug：
+      // P8 的正文里含一个 `——`，按位置切段时标记段被挤走，owner 静默消失。
+      for (const x of pending) {
+        const src = lines[x.line - 1] ?? "";
+        const wrote = /归(\S+)/.exec(src);
+        if (wrote) expect(x.owner).toBe(wrote[1]);
+        else expect(x.owner).toBeUndefined();
+      }
+      expect(human.filter((x) => x.owner !== undefined).length).toBe(human.length);
+
+      // [auto] 条目的 kind 从标记段解出。**status 不在这里断言**——它随文档演进
+      // （待查→查中→已回，2026-08 P1/P2 已定案标 answered），「auto 全 open」
+      // 是快照断言，会被正常演进击穿。status 的解析属于 L7-frontier 的领域。
+      const auto = pending.filter((x) => x.kind === "auto");
+      expect(auto.length).toBeGreaterThan(0);
+    } finally {
+      f.cleanup();
     }
-    expect(human.filter((x) => x.owner !== undefined).length).toBe(human.length);
-
-    // [auto] 条目的 kind 从标记段解出。**status 不在这里断言**——它随文档演进
-    // （待查→查中→已回，2026-08 P1/P2 已定案标 answered），「auto 全 open」
-    // 是快照断言，会被正常演进击穿。status 的解析属于 L7-frontier 的领域。
-    const auto = pending.filter((x) => x.kind === "auto");
-    expect(auto.length).toBeGreaterThan(0);
   });
 
   it("正文里含 `——` → 段位不错位（标记段按内容认，不按位置数）", () => {
@@ -113,8 +116,9 @@ describe("L7 未决表解析（pending）", () => {
 
   it("整行没有 [auto]/[human] 标记 → 报错，不静默当成 human", () => {
     const f = derive("own", (lines) => {
-      const at = lineOf(lines, /^- P3 /);
-      lines[at] = lines[at]!.replace("[human] 归我", "归我");
+      // P3 已定案删行——改从 P1 出发，剥掉它的标记段
+      const at = lineOf(lines, /^- P1 /);
+      lines[at] = lines[at]!.replace(/\[auto\]\s*已回\s*→\s*\S+/, "已回 → wf/notes/p1-mark.md");
       return lines;
     });
     try {
@@ -122,7 +126,7 @@ describe("L7 未决表解析（pending）", () => {
       // 与 L3 同一条判据：分类承载判据（谁去动它），默认值会让漏标看不见
       expect(r.ok).toBe(false);
       if (r.ok) return;
-      expect(r.errors.some((e) => e.line === lineOf(f.lines, /^- P3 /) + 1)).toBe(true);
+      expect(r.errors.some((e) => e.line === lineOf(f.lines, /^- P1 /) + 1)).toBe(true);
       expect(r.errors.some((e) => /\[auto\]|\[human\]/.test(e.message))).toBe(true);
     } finally {
       f.cleanup();

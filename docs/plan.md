@@ -14,7 +14,7 @@
 **提交纪律（M1–M6 手工期）**：每里程碑**至少**三个 commit——测试（全红，证明断言未迁就实现）／实现（全绿）／文档收缩（D-06）。
 那三个是**顺利路径断言**，不是提交纪律本身；真正的纪律是 D-45（一个提交一件事），且 **D-45 覆盖固定数**（D-46）。
 所以：修复轮各自一个 commit，人工放行凭证另一个。M1 实际走了 5 个（三轮返工），不是违纪。
-不 commit 红的实现。M6 之后 commit 权移交 tester `/pass`（见未决 P6）。
+不 commit 红的实现。M6 之后 commit 权移交 tester `/pass`——**分界点 = M6 验收通过**（M6-fixes.md 判定 + M6.5 + M6.6 三份人工凭证落盘）之后：dev 按 D-45 自提交（红测试 / 绿实现），`/pass`（verdict_pass）是「该轮产物可落盘」的机械信号、验收凭证随 /pass 落盘提交，arch 收尾做文档收缩提交 + 进度表重生，人只在里程碑边界核查。
 
 > 当前形态的已知缺口：三个提交的产出物分别对应 tester / dev / arch，**但一人扮三角色，没有上下文隔离**。
 > 我写的测试在判我写的实现，这正是 D-01 要防的形状。M3 发生过两回（tester.md 超一行、
@@ -141,19 +141,13 @@
 
 - **mock-pi 的保真度**：e2e 用同进程 mock 驱动三个适配器，它验的是接线正确，不验 pi 真实行为（事件时序、`sendUserMessage` 语义、系统提示注入链）。这是 `[human]` 那条存在的理由，不能用 e2e 顶掉。
 - **mock-pi 的 API 清单不预先定**：它等于「wire.ts 碰了 pi 对象上的哪几个方法」，M1–M5 之前写出来是猜。事后补不回来的只有注入缝，那一条已由 A9 钉住（D-07）。
-- **注入自检未接通（P1 定案引出）**：`specPresent` 只有纯函数 + R5 单测，**无任何调用点**。R5 测试头注释声明「M6 负责把它挂到 agent_start 上并接 notify」，但 `wire.ts` 只挂了 session_start / before_agent_start / tool_call / agent_end 四个钩子，没有 agent_start。后果：「规约被后续扩展整份替换」时窗口正常、工具在、仅模型不知道自己是谁（inject.ts 头注释描述的正是这个静默症状）。pi 机制上支持修复：`agent_start` + `ctx.getSystemPrompt()` 能拿到 agent 层最终 prompt（此时 before_agent_start 链已走完）；注意 `getSystemPrompt` 不反映 `before_provider_request` 的 payload 级重写（extensions.md 明言），自检覆盖的是 before_agent_start 链。**M6 断言表没有覆盖这条**（A9 只拦 pi 值导入）。建议由人定：① 补一条断言（如 [auto] 断言 `specPresent(` 在 src/adapter/ 有调用点，或 E1 扩展验注入被替换后告警）；② 显式接受缺口，删掉 R5 注释里那句「M6 负责」；③ 挪到后续里程碑。不补的后果：R5 单测在测一个不会运行的函数。
+- **注入自检（P1）已接通；断言表是否点名 A9b —— 已定**：P1 查证时点 `specPresent` 无调用点是历史事实（wf/notes/p1-mark.md）；修复轮已闭环——`src/adapter/selfcheck.ts` 挂 `agent_start` + `ctx.getSystemPrompt()` 查特征串、不在则告警，A9b 三用例钉住行为（正常不告警 / 整份替换告警且含角色 / 角色区分），真进程复测过。**arch 判定：不补新断言**——A9b 在 M6.1 的 `npm test -- tests/adapter` 目录范围内，M6.1 已覆盖；再补一条 grep 断言属 D-40 ②问里的「保护自证」（用户能力已由 A9b 保护：规约被替换时窗口正常、工具在、仅模型不知道自己是谁——这个静默症状现在会被检出）。残余小事：R5 头注释「M6 负责把它挂到 agent_start 上并接 notify」已兑现，建议改为指向 A9b（一句话，随下次提交）。
+- **schema↔gates 一致性测试缺口（M6-003 修复方向未全落）**：tester 的 M6-003 修复方向含「补 schema 生成属性集合 == gates 消费字段 的校验测试」，修复轮未加（`grep artifact tests/` 仅 E1 与 gates 侧命中）。现状：`FIELDS` 与 union 基础集已含 artifact（可选字段），真进程复测投递成功——**通道已通，不阻塞修复轮判定**。但若将来从 `FIELDS`/union 删掉 artifact，无自动化测试会红（E1 直调 execute 绕过 schema 校验、fakePi 不校验参数）。建议补一条测试：用真实 `sendTaskSchema(role)` 断言 dev/tester 的 schema 属性含 artifact，顺带让 E1 走 schema 校验路径（D-25）。归人定：补进修复轮（派 dev）或接受为已知风险。
 
 ## 未决
 
-- P1 规约注入被后续扩展替换掉时，MARK 自检能不能真的发现 —— 结论：当前不能（`specPresent` 无调用点）；机制上能（`agent_start` + `ctx.getSystemPrompt()` 可拿最终 prompt） —— [auto] 已回 → wf/notes/p1-mark.md —— 前置：无
-- P2 pi 的 `before_agent_start` 在 `--print` 模式（无 TUI）下是否照常触发 —— 结论：照常触发（print 模式扩展照常运行，agent 事件链完整；UI 专属调用已由 `ctx.mode` 守卫，注入不依赖 UI） —— [auto] 已回 → wf/notes/p2-pi-before-agent-st.md —— 前置：无
-- P3 单窗口降级要不要给 `dev-only` 启动脚本 —— [human] 归我 —— 前置：P2
-- P5 M6 那条人工断言用什么任务来跑 —— [human] 归我 —— 前置：无
-- P6 commit 权从手工移交 tester `/pass` 的分界点 —— [human] 归我 —— 前置：P5
-- P7 宪法 30 条迁入后进不进每轮读序 —— [human] 归我 —— 前置：无
-  （触发器：宪法迁入那天。倾向是**不进**——它管「实现别踩坑」，正确读法是按区域按需读，
-  那样「读序翻倍」这个担心就不存在。设计已定：D-48 一条一条生效；安全网已在：
-  `check:disciplines` 第三项查「声称的机制真存在且已接线」）
+- P1 规约注入被后续扩展替换掉时，MARK 自检能不能真的发现 —— **已定案**：查证时点结论「当前不能」已被修复轮推翻——`src/adapter/selfcheck.ts` 挂 `agent_start` + `ctx.getSystemPrompt()`，A9b 三用例钉住行为（能发现） —— [auto] 已回 → wf/notes/p1-mark.md —— 前置：无
+- P2 pi 的 `before_agent_start` 在 `--print` 模式（无 TUI）下是否照常触发 —— **已定案**：照常触发，结论被采纳（print 模式扩展照常运行、agent 事件链完整；wire 的 `ctx.mode` 守卫是对的行为，不是绕过）；解锁 P3 —— [auto] 已回 → wf/notes/p2-pi-before-agent-st.md —— 前置：无
 
 ## 说不清的
 

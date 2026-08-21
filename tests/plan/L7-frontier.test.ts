@@ -118,17 +118,19 @@ describe("L7 frontier 分组", () => {
   });
 
   it("前置写口语 → blockedBy 为空，不报错（只影响排序）", () => {
+    // 真实 plan.md 已无带 P 引用的前置（P3 已定案删行）——把 P1 的前置改写为口语，
+    // 构造「口语前置」的确定输入（D-25：仍从真实行出发）
     const f = derive("own", (lines) => {
-      const at = lineOf(lines, /^- P3 /);
-      lines[at] = lines[at]!.replace("前置：P2", "前置：上面某条");
+      const at = lineOf(lines, /^- P1 /);
+      lines[at] = lines[at]!.replace(/前置：.*$/, "前置：上面某条");
       return lines;
     });
     try {
       const r = parsePlan(f.root, f.rel);
       // 口语前置不是错误——人写规划书时说不清依赖是常态（D-10）
       if (!r.ok) throw new Error(`不该报错：${JSON.stringify(r.errors)}`);
-      const p3 = r.plan.pending.find((x) => x.id === "P3")!;
-      expect(p3.blockedBy).toEqual([]);
+      const p1 = r.plan.pending.find((x) => x.id === "P1")!;
+      expect(p1.blockedBy).toEqual([]);
     } finally {
       f.cleanup();
     }
