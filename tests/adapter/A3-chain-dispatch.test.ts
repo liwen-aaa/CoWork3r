@@ -15,12 +15,15 @@ import { describe, expect, it } from "vitest";
 
 import { CHAINS, runChain } from "../../src/gates/index.ts";
 import { wire } from "../../src/adapter/index.ts";
-import { fakePi, makeProject, realConfig, realMilestone } from "./_fixture.ts";
+import { writeState } from "../../src/channel/index.ts";
+import { fakePi, installPlan, makeProject, realConfig, realMilestone } from "./_fixture.ts";
 import type { GateContext } from "../../src/gates/index.ts";
 
 function ctxFor(root: string): GateContext {
-  const { cfg } = realConfig(root);
+  const { cfg } = realConfig(root, { plan: installPlan(root) });
   if (!cfg) throw new Error("前提失败：模板配置应可解析");
+  // wire 的拦截从 state.milestone 读当前里程碑——测试必须先把 state 写好
+  writeState(root, { milestone: "M1", round: 1, maxRounds: 5, consecutiveFails: 0 });
   return {
     root,
     cfg,
@@ -41,11 +44,11 @@ describe("A3 链分发", () => {
       for (const key of Object.keys(CHAINS) as Array<keyof typeof CHAINS>) {
         const [role, type] = key.split(":") as [string, string];
         const pi = fakePi();
-        wire(role as "arch" | "dev" | "tester", pi);
+        wire(role as "arch" | "dev" | "tester", pi as never);
 
         // 从 CHAINS 拿链，构造一个必失败的输入（空 input 对结构 gate 必 block）
         const chain = CHAINS[key];
-        const expected = runChain(chain, { ...base, input: {} });
+        const expected = runChain(chain ?? [], { ...base, input: {} });
 
         // 触发 wire 的 tool_call 拦截
         const result = pi.emit(
@@ -71,7 +74,7 @@ describe("A3 链分发", () => {
     const p = makeProject("a3-other");
     try {
       const pi = fakePi();
-      wire("dev", pi);
+      wire("dev", pi as never);
       const r = pi.emit("tool_call", { toolName: "bash", input: {} }, { cwd: p.root });
       expect(r).toBeUndefined();
     } finally {

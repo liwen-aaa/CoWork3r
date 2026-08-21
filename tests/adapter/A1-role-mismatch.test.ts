@@ -9,12 +9,13 @@
  * 告警必须把**实际收到的值**按 JSON 表示打出来，不能是「角色不匹配」这种
  * 让人去猜的话。
  *
- * 激活检查在 `wire` 内部（三份 extensions 只做 `wire("arch", pi)` 一行，
- * 逻辑只写一份）。`wire(role, pi)` 与 env 不符 → 告警 + 不注册任何东西。
+ * 角色检查在 extensions/*.ts（07-adapter.md：「读 WF_ROLE，调 wire()」，
+ * 已知取舍：三个入口重复，换来「一个窗口只加载自己那份」）。本文件 import
+ * 真实的 extensions/arch.ts 入口（D-25：不复制逻辑，直接测被测对象）。
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { wire } from "../../src/adapter/index.ts";
+import archExt from "../../extensions/arch.ts";
 import { fakePi } from "./_fixture.ts";
 
 describe("A1 角色激活：尾随空格", () => {
@@ -26,7 +27,7 @@ describe("A1 角色激活：尾随空格", () => {
   it('WF_ROLE="arch "（尾随空格）→ 告警含带引号的 "arch "', () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     process.env.WF_ROLE = "arch ";
-    wire("arch", fakePi());
+    archExt(fakePi() as never);
     const called = warn.mock.calls.map((c) => c.join(" ")).join("\n");
     // 告警文本必须含 `"arch "`（JSON 表示，引号可见）——不是「角色不匹配」这种含糊话
     expect(called).toContain('"arch "');
@@ -36,9 +37,18 @@ describe("A1 角色激活：尾随空格", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     process.env.WF_ROLE = "arch ";
     const pi = fakePi();
-    wire("arch", pi);
+    archExt(pi as never);
     expect(pi.tools.length).toBe(0);
     expect(pi.handlers.size).toBe(0);
     expect(pi.commands.length).toBe(0);
+  });
+
+  it('WF_ROLE 正确时（"arch"）→ 正常接线，不告警', () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    process.env.WF_ROLE = "arch";
+    const pi = fakePi();
+    archExt(pi as never);
+    expect(warn).not.toHaveBeenCalled();
+    expect(pi.tools.length).toBeGreaterThan(0);
   });
 });

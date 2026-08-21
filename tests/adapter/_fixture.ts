@@ -49,6 +49,7 @@ export function makeProject(label: string): {
     root,
     file: (rel, content) => {
       const full = join(root, rel);
+      mkdirSync(join(full, ".."), { recursive: true });
       writeFileSync(full, content, "utf-8");
       return rel;
     },
@@ -70,6 +71,18 @@ export function realConfig(
   const tpl = JSON.parse(readFileSync(join(REPO_ROOT, "templates/wf.config.json"), "utf-8"));
   writeFileSync(join(root, "wf.config.json"), JSON.stringify({ ...tpl, ...patch }, null, 2), "utf-8");
   return inspectConfig(root);
+}
+
+/**
+ * 往临时项目里放一份真实规划书（D-25：adapter 的拦截链要 parsePlan，
+ * 临时目录里没有 plan 文件的话 wire 会解析失败 → 拦截静默放行）。
+ * 用 minimal 那份：一里程碑两断言，chain 跑得起来。
+ */
+export function installPlan(root: string, rel = "docs/plan.md"): string {
+  const full = join(root, rel);
+  mkdirSync(join(full, ".."), { recursive: true });
+  writeFileSync(full, readFileSync(join(REPO_ROOT, MINIMAL_PLAN), "utf-8"), "utf-8");
+  return rel;
 }
 
 /**

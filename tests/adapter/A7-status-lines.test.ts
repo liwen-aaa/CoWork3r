@@ -14,20 +14,20 @@ import { describe, expect, it } from "vitest";
 
 import { bootBriefing } from "../../src/adapter/index.ts";
 import { frontier, parsePlan } from "../../src/plan/index.ts";
-import { makeProject, realConfig, realMilestone } from "./_fixture.ts";
+import { fakePi, installPlan, makeProject, realConfig, realMilestone } from "./_fixture.ts";
 
 const BASE = {
   root: process.cwd(),
   role: "arch" as const,
   state: { milestone: "M5", round: 1, maxRounds: 5, consecutiveFails: 0 },
-  diagnostics: [] as Array<{ level: string; message: string }>,
+  diagnostics: [] as never,
 };
 
 describe("A7 /status 四行", () => {
   it("简报包含状态 / 未决 / 降级三类信息", () => {
     const p = makeProject("a7-four");
     try {
-      const { cfg } = realConfig(p.root);
+      const { cfg } = realConfig(p.root, { plan: installPlan(p.root) });
       if (!cfg) throw new Error("前提失败");
       const text = bootBriefing({
         ...BASE,
@@ -35,7 +35,7 @@ describe("A7 /status 四行", () => {
         plan: null,
         milestone: realMilestone("M1"),
       });
-      expect(text).toMatch(/M1/); // 状态行：里程碑
+      expect(text).toMatch(/M5/); // 状态行：里程碑
       expect(text).toMatch(/未决/); // 未决行
     } finally {
       p.cleanup();

@@ -15,7 +15,7 @@ import { build } from "../../src/protocol/index.ts";
 import { ROUTES } from "../../src/protocol/routes.ts";
 import { readState } from "../../src/channel/index.ts";
 import { FLOW } from "../../src/adapter/index.ts";
-import { makeProject, realMilestone } from "./_fixture.ts";
+import { makeProject, realConfig, realMilestone } from "./_fixture.ts";
 
 describe("A4 flow 状态表", () => {
   it("FLOW 覆盖 ROUTES 全部 9 个 type", () => {
@@ -78,6 +78,32 @@ describe("A4 flow 状态表", () => {
       expect(s.milestone).toBe("M1");
       expect(s.round).toBe(1);
       expect(s.consecutiveFails).toBe(0);
+    } finally {
+      p.cleanup();
+    }
+  });
+
+  it("fix_request 且 fails ≥ maxRounds → 转发 stuck 给人（wake=human + stuck 信号）", () => {
+    const p = makeProject("a4-stuck");
+    try {
+      const m = realMilestone("M1");
+      // maxRounds 来自真实 config（模板里 5）。连发 5 次 fix_request 应触发 stuck
+      const { cfg } = realConfig(p.root);
+      if (!cfg) throw new Error("前提失败");
+      let last: ReturnType<typeof FLOW.fix_request> | undefined;
+      for (let i = 0; i < cfg.maxRounds; i++) {
+        last = FLOW.fix_request({
+          root: p.root,
+          msg: build("fix_request", "tester", { milestone: "M1", issues: [{ id: `M1-00${i}`, severity: "serious", description: `第 ${i + 1} 次` }] }),
+          milestone: m,
+        });
+      }
+      // 第 maxRounds 次：fails == maxRounds → stuck
+      expect(last).toBeDefined();
+      expect(last!.wake).toBe("human");
+      expect(last!.stuck).toBe(true);
+      const s = readState(p.root);
+      expect(s.consecutiveFails).toBe(cfg.maxRounds);
     } finally {
       p.cleanup();
     }

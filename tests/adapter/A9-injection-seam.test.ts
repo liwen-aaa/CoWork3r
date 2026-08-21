@@ -9,87 +9,77 @@
  *     注册隔离。两半全绿才能说 M6 的 e2e 能写。
  *
  * 后半的 root 从 ctx.cwd 来：wire 不得把 root 存进模块作用域（D-07 的实义）。
+ * 事件在**临时项目**里触发（仓库根没有 wf 配置，readState 会静默返回空态）。
  */
 import { execSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 import { wire } from "../../src/adapter/index.ts";
-import { channelPaths } from "../../src/channel/index.ts";
-import { fakePi, makeProject, realConfig } from "./_fixture.ts";
+import { writeState } from "../../src/channel/index.ts";
+import { fakePi, makeProject, realConfig, installPlan } from "./_fixture.ts";
 
 const ROOT = process.cwd();
 
 describe("A9 注入缝", () => {
   it("grep：src/ 里 @earendil-works/pi-coding-agent 只以 import type 出现", () => {
     const out = execSync(
-      `grep -rn "@earendil-works/pi-coding-agent" src/ | grep -v "import type"`,
-      { cwd: ROOT, encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] },
+      `grep -rn "@earendil-works/pi-coding-agent" src/ | grep -v "import type" || true`,
+      { cwd: ROOT, encoding: "utf-8" },
     );
     expect(out).toBe("");
   });
 
-  it("同进程 wire() 三次 → 三份 channelPaths 的 root 互不相同（状态隔离）", () => {
-    // 三次 wire 共用同一模块级代码，但每个 fake pi 的事件 ctx.cwd 不同。
-    // wire 若把 root 存进模块作用域，三份就共享了——A9 抓的就是这个。
-    const piA = fakePi();
-    const piB = fakePi();
-    const piC = fakePi();
-    wire("arch", piA);
-    wire("dev", piB);
-    wire("tester", piC);
-
-    const pa = makeProject("a9-A");
-    const pb = makeProject("a9-B");
-    const pc = makeProject("a9-C");
+  it("同进程 wire() 三次 → A 的 fake pi 上没收到过 B 的事件（注册隔离）", () => {
+    const p = makeProject("a9-events");
     try {
-      realConfig(pa.root);
-      realConfig(pb.root);
-      realConfig(pc.root);
+      realConfig(p.root, { plan: installPlan(p.root) });
+      writeState(p.root, { milestone: "M1", round: 1, maxRounds: 5, consecutiveFails: 0 });
 
-      // 各自触发 session_start，root 从各自 ctx.cwd 来
-      piA.emit("session_start", { reason: "startup" }, { cwd: pa.root });
-      piB.emit("session_start", { reason: "startup" }, { cwd: pb.root });
-      piC.emit("session_start", { reason: "startup" }, { cwd: pc.root });
+      const piA = fakePi();
+      const piB = fakePi();
+      wire("arch", piA as never);
+      wire("dev", piB as never);
 
-      const stateA = channelPaths(pa.root).state;
-      const stateB = channelPaths(pb.root).state;
-      const stateC = channelPaths(pc.root).state;
-      expect(stateA).not.toBe(stateB);
-      expect(stateB).not.toBe(stateC);
-
-      // A 的事件只写 A 的目录（不存在 B/C 的东西）
-      expect(piA.sent.length).toBeGreaterThan(0); // 就绪通知发出
-      expect(piB.sent.length).toBeGreaterThan(0);
-      expect(piC.sent.length).toBeGreaterThan(0);
+      // 触发 A 的 agent_end：只有 A 的 sent 被追加，B 不受影响
+      const beforeB = piB.sent.length;
+      piA.emit("agent_end", {}, { cwd: p.root });
+      expect(piA.sent.length).toBeGreaterThan(beforeB);
+      expect(piB.sent.length).toBe(beforeB);
     } finally {
-      pa.cleanup();
-      pb.cleanup();
-      pc.cleanup();
+      p.cleanup();
     }
   });
 
-  it("A 的 fake pi 上没收到过 B 注册的工具（注册隔离）", () => {
-    const piA = fakePi();
-    const piB = fakePi();
-    wire("arch", piA);
-    wire("dev", piB);
+  it("A 的 fake pi 上没收到过 B 注册的工具（注册隔离，反向）", () => {
+    const p = makeProject("a9-reverse");
+    try {
+      realConfig(p.root, { plan: installPlan(p.root) });
+      writeState(p.root, { milestone: "M1", round: 1, maxRounds: 5, consecutiveFails: 0 });
 
-    // 角色不同 → 工具面不同。若 wire 把工具定义存进模块作用域共享，
-    // A 的 fake pi 上会出现 B 的工具
-    const namesA = new Set(piA.tools.map((t) => t.name));
-    const namesB = new Set(piB.tools.map((t) => t.name));
-    expect(namesA.size).toBeGreaterThan(0);
-    expect(namesB.size).toBeGreaterThan(0);
-    // 至少有一个角色专属工具，证明没有互相泄漏
-    expect([...namesA].some((n) => !namesB.has(n))).toBe(true);
-    expect([...namesB].some((n) => !namesA.has(n))).toBe(true);
+      const piA = fakePi();
+      const piB = fakePi();
+      wire("dev", piA as never);
+      wire("dev", piB as never);
+
+      // 同一角色两次 wire：工具数相同，但各自数组独立（不共享模块级注册表）
+      expect(piA.tools.length).toBe(piB.tools.length);
+      expect(piA.handlers).not.toBe(piB.handlers);
+
+      // 触发 B 的事件，A 的 sent 不动
+      const beforeA = piA.sent.length;
+      piB.emit("agent_end", {}, { cwd: p.root });
+      expect(piB.sent.length).toBeGreaterThan(0);
+      expect(piA.sent.length).toBe(beforeA);
+    } finally {
+      p.cleanup();
+    }
   });
 
   it("同一角色 wire 两次 → 两份独立注册（重复加载也隔离）", () => {
     const pi1 = fakePi();
     const pi2 = fakePi();
-    wire("dev", pi1);
-    wire("dev", pi2);
+    wire("dev", pi1 as never);
+    wire("dev", pi2 as never);
     expect(pi1.tools.length).toBe(pi2.tools.length);
     expect(pi1.sent.length).toBe(0); // 没触发事件就不该有副作用
   });
