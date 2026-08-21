@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
 import { wire } from "../../src/adapter/index.ts";
 import { peek, writeState } from "../../src/channel/index.ts";
 import { sendTaskSchema } from "../../src/protocol/index.ts";
-import { fakePi, makeProject, realConfig, installPlan } from "./_fixture.ts";
+import { fakePi, makeProject, realConfig, installPlan, assertParamsMatchSchema } from "./_fixture.ts";
 
 const ROOT = process.cwd();
 
@@ -108,11 +108,15 @@ describe("A9 注入缝", () => {
       const pi = fakePi();
       wire("dev", pi as never);
       const def = pi.tools.find((t) => t.name === "send_task")?.def as
-        | { execute: (...args: unknown[]) => Promise<unknown> | unknown }
+        | { parameters?: unknown; execute: (...args: unknown[]) => Promise<unknown> | unknown }
         | undefined;
       if (!def?.execute) throw new Error("send_task 工具未注册");
       // 按 schema 调用：不传 type（schema 里也没有 type 字段）
-      const r = def.execute("a9", { milestone: "M1", body: "做完了" }, undefined, undefined, {
+      const input = { milestone: "M1", body: "做完了", artifact: "wf/dev-output-M1.md" };
+      // 真实 pi 会先校验参数（additionalProperties/required），直调 execute 会绕过——
+      // 这里把校验搬回调用路径（M6-004 / D-25），schema 与参数脱钩立刻红。
+      assertParamsMatchSchema(def.parameters, input);
+      const r = def.execute("a9", input, undefined, undefined, {
         cwd: p.root,
       });
       if (r && typeof r === "object" && "then" in r) await r;

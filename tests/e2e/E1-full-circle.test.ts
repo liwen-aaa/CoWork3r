@@ -20,18 +20,24 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { peek, readState, writeState } from "../../src/channel/index.ts";
+import { peek, readState } from "../../src/channel/index.ts";
 import { wire } from "../../src/adapter/index.ts";
-import { fakePi, installPlan, makeProject, realConfig } from "../adapter/_fixture.ts";
+import { fakePi, installPlan, makeProject, realConfig, assertParamsMatchSchema } from "../adapter/_fixture.ts";
 
 /** 找到 send_task 工具的 execute（fakePi 记录了 registerTool 的 def） */
 function sendTask(pi: ReturnType<typeof fakePi>) {
   const def = pi.tools.find((t) => t.name === "send_task")?.def as
-    | { execute: (...args: unknown[]) => Promise<unknown> | unknown }
+    | { parameters?: unknown; execute: (...args: unknown[]) => Promise<unknown> | unknown }
     | undefined;
   if (!def?.execute) throw new Error("send_task 工具未注册");
-  return (params: Record<string, unknown>, root: string) =>
-    def.execute("e1", params, undefined, undefined, { cwd: root });
+  const params = def.parameters;
+  return (input: Record<string, unknown>, root: string) => {
+    // 真实 pi 在 execute 前按注册的 schema 校验参数（additionalProperties/required）——
+    // 直调 execute 会绕过这层（M6-004：schema 删字段测试照样绿）。这里把校验搬回来：
+    // 参数与 schema 脱钩立刻抛错，测试红。
+    assertParamsMatchSchema(params, input);
+    return def.execute("e1", input, undefined, undefined, { cwd: root });
+  };
 }
 
 describe("E1 完整一圈", () => {
@@ -65,7 +71,9 @@ describe("E1 完整一圈", () => {
         tester: (params: Record<string, unknown>) => tester.emit("tool_call", { toolName: "send_task", input: params }, { cwd: root }),
       };
 
-      writeState(root, { milestone: "M1", round: 1, maxRounds: 5, consecutiveFails: 0 });
+      // 不预写 state：模拟空项目首次分发（state 无里程碑）。
+      // plan.md 风险节：「空 state 的首个 task_assignment 必崩」的回归防线——
+      // wire 必须从 event.input.milestone 解析里程碑再进链，否则 G_plan 收 null 崩。
 
       // ── 1. arch 分发 task_assignment → dev 收件箱 ──────────────
       const assign = { type: "task_assignment", milestone: "M1", body: "造 src/hello.txt" };
@@ -81,7 +89,8 @@ describe("E1 完整一圈", () => {
         "wf/dev-output-M1.md",
         `# dev 产出 M1\n\n- M1.1 已完成：src/hello.txt 已创建\n`,
       );
-      const bad = { type: "review_request", milestone: "M1", body: "做完了", artifact: "wf/dev-output-M1.md" };
+      const bad = { milestone: "M1", body: "做完了", artifact: "wf/dev-output-M1.md" };
+      // dev 单 type：schema 里没有 type 字段（省掉），按真实路径不传
       const blocked = intercept.dev(bad);
       expect(blocked).toMatchObject({ block: true });
       expect((blocked as { reason: string }).reason).toContain("M1.2");
@@ -93,7 +102,7 @@ describe("E1 完整一圈", () => {
         `# dev 产出 M1\n\n- M1.1 已完成：src/hello.txt 已创建\n- M1.2 已完成：内容读起来是句人话\n`,
       );
       p.file("src/hello.txt", "ok\n"); // source 真改了（G_source 要看到变化）
-      const good = { type: "review_request", milestone: "M1", body: "做完了", artifact: "wf/dev-output-M1.md" };
+      const good = { milestone: "M1", body: "做完了", artifact: "wf/dev-output-M1.md" };
       expect(intercept.dev(good)).toBeUndefined();
       await send.dev(good, root);
       const got2 = peek(root, "tester");
@@ -121,7 +130,7 @@ describe("E1 完整一圈", () => {
       expect(s1.consecutiveFails).toBe(1);
 
       // ── 5. dev 补判定行，重投 → PASS，verdict_pass 发给人 ────────
-      const retry = { type: "review_request", milestone: "M1", body: "补了判定行", artifact: "wf/dev-output-M1.md" };
+      const retry = { milestone: "M1", body: "补了判定行", artifact: "wf/dev-output-M1.md" };
       expect(intercept.dev(retry)).toBeUndefined();
       await send.dev(retry, root);
 

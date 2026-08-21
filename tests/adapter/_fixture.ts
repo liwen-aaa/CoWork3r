@@ -148,3 +148,27 @@ export function fakePi() {
 }
 
 export type FakePi = ReturnType<typeof fakePi>;
+
+/**
+ * 模拟 pi 的 JSON Schema 校验（execute 前）。
+ *
+ * 真实 pi 会对 send_task 的参数做 additionalProperties:false + required 校验
+ * （M6-003 实测：多传 artifact 被拒 "must not have additional properties"）。
+ * E1/A9 直调 execute 会绕过这层——测试只验证 wire 接线，schema 删字段照样绿
+ * （D-25 反例，M6-004）。本 helper 把校验搬回测试调用路径：参数里有 schema
+ * 不认识的键 / 缺必填 → 抛错（等同 pi 拒收），schema 与参数脱钩立刻红。
+ */
+export function assertParamsMatchSchema(schema: unknown, params: Record<string, unknown>): void {
+  const s = schema as { properties?: Record<string, unknown>; required?: string[] };
+  const props = s.properties ?? {};
+  for (const key of Object.keys(params)) {
+    if (!(key in props)) {
+      throw new Error(`参数 ${key} 不在 send_task schema 里（additionalProperties: false 会拒）`);
+    }
+  }
+  for (const key of s.required ?? []) {
+    if (params[key] === undefined) {
+      throw new Error(`参数缺必填 ${key}（send_task schema required）`);
+    }
+  }
+}
