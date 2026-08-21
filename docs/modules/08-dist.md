@@ -224,6 +224,6 @@ tests/dist/
 
 ---
 
-**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ 03-config（已收缩进 `src/config/`） ｜ 04-plan（已收缩进 `src/plan/`） ｜ 05-gates（已收缩进 `src/gates/`） ｜ 06-roles（已收缩进 `src/roles/`） ｜ [07-adapter](07-adapter.md) ｜ 08-dist（本文）
+**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ 03-config（已收缩进 `src/config/`） ｜ 04-plan（已收缩进 `src/plan/`） ｜ 05-gates（已收缩进 `src/gates/`） ｜ 06-roles（已收缩进 `src/roles/`） ｜ 07-adapter（已收缩进 `src/adapter/`） ｜ 08-dist（本文）
 
 **架构文档完整。** 下一步见 [模块清单](README.md#下一步)。
