@@ -61,9 +61,18 @@ describe("T10 老仓库真实产物回归", () => {
     const r = checkDevOutput(REPO_ROOT, PAPER.devOutput, m);
     expect(r.ok).toBe(false);
     if (r.ok) return;
-    // 拦它的理由必须是断言覆盖，不是「小节不对」——判据不看形状
+
+    // 拦它的理由必须是断言覆盖
     for (const a of m.assertions) expect(r.reason).toContain(a.id);
-    expect(r.reason).not.toMatch(/小节|章节|格式/);
+
+    // 而不是小节名。判据已经不认固定小节，所以这三个名字不应在任何
+    // 拦截文案里出现——它们是老仓库那套仪式的具体形态（含那个 0/4 的节）。
+    // 第一版我写的是 `not.toMatch(/小节|章节|格式/)`，它拿 reason 里
+    // 「不要求任何固定小节」这句话当成了违规——而那句话正是 D-22 要说的。
+    // 用正则去猜「这句话是在要求小节还是在否定小节」是没头的，改查具体名字。
+    for (const oldSection of ["文档一致性", "修改的文件", "已知未完成"]) {
+      expect(r.reason).not.toContain(oldSection);
+    }
   });
 
   it("防误伤对照组：从断言表推导的报告放行", () => {

@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { commandGateStatus, runChain, CHAINS } from "../../src/gates/index.ts";
+import { commandGateStatus, runChain, chainFor } from "../../src/gates/index.ts";
 import { makeProject, realConfig, realMilestone } from "./_fixture.ts";
 
 describe("T6 test: null 的显式降级", () => {
@@ -36,7 +36,10 @@ describe("T6 test: null 的显式降级", () => {
       const { cfg } = realConfig(p.root, { test: null, gate: undefined, gatePass: undefined });
       if (!cfg) throw new Error("前提失败");
       // 只验 G_command 那一环为空；结构与 [human] 覆盖是别的 gate 的事（T2/T7）
-      const chain = CHAINS["tester:verdict_pass"].filter((g) => g.name === "G_command");
+      const full = chainFor("tester", "verdict_pass");
+      if (full === null) throw new Error("CHAINS 缺 tester:verdict_pass");
+      const chain = full.filter((g) => g.name === "G_command");
+      expect(chain).toHaveLength(1); // 前提：确实滤到了那一道，不是空链恰好绿
       const r = runChain(chain, { root: p.root, cfg, milestone: m, input: {} });
       expect(r.ok).toBe(true);
     } finally {
@@ -60,7 +63,10 @@ describe("T6 test: null 的显式降级", () => {
     try {
       const { cfg } = realConfig(p.root, { test: null, gate: undefined, gatePass: undefined });
       if (!cfg) throw new Error("前提失败");
-      const notice = commandGateStatus(cfg).notice!;
+      const st = commandGateStatus(cfg);
+      expect(st.empty).toBe(true);
+      const notice = st.notice;
+      if (notice === undefined) throw new Error("empty 时必须给 notice（D-23）");
       // 人看到这句话要知道「那现在靠什么」——结构检查 + 人工关卡
       expect(notice).toMatch(/结构|人工/);
     } finally {

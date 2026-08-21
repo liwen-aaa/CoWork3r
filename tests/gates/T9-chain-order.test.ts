@@ -13,7 +13,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
-import { CHAINS, runChain } from "../../src/gates/index.ts";
+import { CHAINS, chainFor, runChain } from "../../src/gates/index.ts";
 import { ROUTES } from "../../src/protocol/index.ts";
 import { makeProject, realConfig, realMilestone } from "./_fixture.ts";
 import type { Gate } from "../../src/gates/index.ts";
@@ -93,20 +93,29 @@ describe("T9 拦截链的顺序与完整性", () => {
       const { cfg } = realConfig(p.root);
       if (!cfg) throw new Error("前提失败");
       expect(runChain([], { root: p.root, cfg, milestone: m, input: {} }).ok).toBe(true);
-      expect(CHAINS["arch:report"]).toHaveLength(0);
+      expect(chainFor("arch", "report")).toHaveLength(0);
     } finally {
       p.cleanup();
     }
   });
 
   it("verdict_pass 链里 G_command 排在结构 gate 之后（贵的在后）", () => {
-    const names = CHAINS["tester:verdict_pass"].map((g) => g.name);
+    const chain = chainFor("tester", "verdict_pass");
+    if (chain === null) throw new Error("CHAINS 缺 tester:verdict_pass");
+    const names = chain.map((g) => g.name);
     const iCmd = names.indexOf("G_command");
     expect(iCmd).toBeGreaterThan(-1);
     // 结构检查必须在它之前
-    const iArtifact = names.findIndex((n) => n.includes("artifact") || n.includes("Artifact"));
+    const iArtifact = names.findIndex((n) => /artifact/i.test(n));
     expect(iArtifact).toBeGreaterThan(-1);
     expect(iArtifact).toBeLessThan(iCmd);
+  });
+
+  it("chainFor 查不到返回 null，不是空数组（区分「声明无 gate」与「键写错了」）", () => {
+    // 这两者混同正是老仓库 ticket_result 那个 bug 能活两个月的原因
+    expect(chainFor("arch", "report")).toEqual([]);
+    expect(chainFor("dev", "verdict_pass")).toBeNull();
+    expect(chainFor("nobody", "nothing")).toBeNull();
   });
 
   it("ROUTES 里每个 type 都能在 CHAINS 里查到（不许某条通道静默无 gate）", () => {
