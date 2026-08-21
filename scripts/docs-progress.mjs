@@ -11,6 +11,16 @@
  *          + docs/modules/ 里还剩几份 .md（D-06 的收缩进度，数文件不手写）
  *          + vitest 实测用例数（不手写数字，D-03：可推导的值不让人填）
  *
+ * 里程碑为什么调 `parsePlan` 而不自己写正则：第一版写了一份
+ * `/^## 里程碑 (\S+) (.+)$/`，而它没归一 CRLF——docs/plan.md 被 Windows 的
+ * autocrlf 改成 CRLF 那一天，`(.+)$` 卡在 `` 上，本脚本静默产出
+ * 「0 个里程碑 / 已验收 0/0」并把整张表写空。无异常、无非零退码。
+ *
+ * 那正是本项目存在的理由：语法写两份，两份不一致时没有任何信号（老仓库四份
+ * 规划书全部通不过 gate 却没人发现，同一回事）。所以语法只有一份：
+ * `src/plan/grammar.ts`。本脚本是它的消费者，不是第二份定义。
+ * （Node 24 原生认 .ts，不需要打包器——与人工验证脚本同一条前提）
+ *
  * 用法：npm run docs:progress
  * 一致性：与 docs:protocol 同形状——重跑后 git diff --exit-code 应无输出。
  *
@@ -18,7 +28,9 @@
  * 而 vitest 口径是 23 / 55 / 57。三处手写数字，三个都对不上。
  */
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, writeFileSync } from "node:fs";
+
+import { parsePlan } from "../src/plan/index.ts";
 
 const PLAN = "docs/plan.md";
 const OUT = "docs/progress.md";
@@ -33,25 +45,27 @@ const TEST_DIRS = {
   M6: ["tests/adapter", "tests/e2e"],
 };
 
-// ── 权威一：plan.md 的里程碑标题 ──────────────────────────
-const plan = readFileSync(PLAN, "utf-8");
-const milestones = [];
-for (const line of plan.split("\n")) {
-  const m = /^## 里程碑 (\S+) (.+)$/.exec(line);
-  if (!m) continue;
-  const [, id, rest] = m;
-  // S2：标题含 ✅ → 已验收。解析器容忍括注与日期，这里同样只看标记
-  const passed = rest.includes("✅");
-  milestones.push({ id, title: rest.replace("✅", "").trim(), passed });
+// ── 权威一：plan.md——经真实解析器，不自己写正则 ────────────────
+const parsed = parsePlan(process.cwd(), PLAN);
+if (!parsed.ok) {
+  // 解析不了就不写盘：宁可报错也不产出一张空表（上一版就是静默写空的）
+  console.error(`解析 ${PLAN} 失败，不生成进度：`);
+  for (const e of parsed.errors) console.error(`  ${PLAN}:${e.line} ${e.message}`);
+  process.exit(1);
 }
 
-/** 每个里程碑的 [auto] / [human] 断言条数，从断言节数，不手写 */
-for (const ms of milestones) {
-  const start = plan.indexOf(`## 里程碑 ${ms.id} `);
-  const nextIdx = plan.indexOf("\n## ", start + 1);
-  const body = plan.slice(start, nextIdx === -1 ? undefined : nextIdx);
-  ms.auto = (body.match(/^- \[auto\]/gm) ?? []).length;
-  ms.human = (body.match(/^- \[human\]/gm) ?? []).length;
+/** 断言条数与 passed 均从解析结果数，不手写（D-03） */
+const milestones = parsed.plan.milestones.map((m) => ({
+  id: m.id,
+  title: m.title,
+  passed: m.passed,
+  auto: m.assertions.filter((a) => a.kind === "auto").length,
+  human: m.assertions.filter((a) => a.kind === "human").length,
+}));
+
+if (milestones.length === 0) {
+  console.error(`${PLAN} 里一个里程碑都没解出来——不生成进度`);
+  process.exit(1);
 }
 
 // ── 权威二：实测用例数 ────────────────────────────────────
