@@ -75,11 +75,21 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     const parsed = parsePlan(ctx.cwd, cfg.plan);
     const st = readState(ctx.cwd);
     const m = parsed.ok ? milestone(parsed.plan, st.milestone) : null;
-    pi.sendUserMessage(
-      `wf: ${role} 就绪\n` +
-        bootBriefing({ root: ctx.cwd, role, cfg, state: st, plan: parsed.ok ? parsed.plan : null, milestone: m, diagnostics }),
-      { deliverAs: "followUp" },
-    );
+    const brief = bootBriefing({
+      root: ctx.cwd,
+      role,
+      cfg,
+      state: st,
+      plan: parsed.ok ? parsed.plan : null,
+      milestone: m,
+      diagnostics,
+    });
+    // --print / rpc 模式没有可投递的会话窗口：sendUserMessage 会与正在处理的
+    // 消息冲突（"Agent is already processing"）。身份注入走 before_agent_start
+    // 改 systemPrompt，不依赖这里。TUI 才发就绪通知。
+    if (ctx.mode === "tui") {
+      pi.sendUserMessage(`wf: ${role} 就绪\n${brief}`, { deliverAs: "followUp" });
+    }
   });
 
   pi.on("before_agent_start", (event) => ({
@@ -101,6 +111,7 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
 
   pi.on("agent_end", (_event, ctx) => {
     if (readState(ctx.cwd).milestone === "") return;
+    if (ctx.mode !== "tui") return; // print/rpc 无会话窗口，投递会冲突
     pi.sendUserMessage("wf: 本轮结束。若已完成请调 send_task 投出去。", { deliverAs: "followUp" });
   });
 }

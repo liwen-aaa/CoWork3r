@@ -116,7 +116,7 @@ export function fakePi() {
       sent.push({ text, opts });
     },
     /** 同步触发。handler 返回值原样返回（拦截链的 {block, reason} 就走这里） */
-    emit(event: string, payload: unknown, ctx: { cwd: string }): unknown {
+    emit(event: string, payload: unknown, ctx: { cwd: string; mode?: "tui" | "print" | "rpc" | "json" }): unknown {
       const hs = handlers.get(event);
       if (!hs) return undefined;
       let result: unknown;
