@@ -15,7 +15,8 @@
     "check:disciplines": "node scripts/check-disciplines.mjs",
     "check:testsize": "node scripts/check-testsize.mjs",
     "typecheck": "tsc --noEmit",
-    "docs:progress": "node scripts/docs-progress.mjs"
+    "docs:progress": "node scripts/docs-progress.mjs",
+    "wording:gates": "node scripts/gate-wording.mjs"
   },
   "devDependencies": {
     "@types/node": "24.12.4",
