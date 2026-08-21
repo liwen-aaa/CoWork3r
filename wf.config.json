@@ -1,0 +1,11 @@
+{
+  "plan": "docs/plan.md",
+  "source": "src",
+  "test": "npm test",
+
+  "testTimeoutMs": 120000,
+  "testPass": "(passed|PASS)",
+  "gate": "npm run typecheck",
+  "maxRounds": 5,
+  "roleNotes": "本仓库是 work-flow-remake：三窗口协作工作流的开发仓库。src/ 里 pi 只能 import type（D-07）；文档收缩见 docs/modules/README.md。"
+}
