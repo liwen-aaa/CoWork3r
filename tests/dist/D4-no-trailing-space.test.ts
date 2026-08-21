@@ -25,4 +25,22 @@ describe("D4 launch 无尾随空格", () => {
       }
     }
   });
+
+  it("set WF_ROLE=<值> 与 && 之间无空格（值尾随空格 = 老仓库那次事故）", () => {
+    // trio.ps1 是行中写法：`set WF_ROLE=dev&& pi`。cmd 的 `set VAR=value && cmd`
+    // 会把 && 前的空格吃进值里 → WF_ROLE="dev " → 角色激活不匹配 → 窗口静默。
+    // 实测：`set WF_ROLE=dev&& echo` → [dev]；`set WF_ROLE=dev && echo` → [dev ]。
+    // 判据：set WF_ROLE= 后面紧跟非空格字符，直到 && 或行尾，中间无空格。
+    const files = readdirSync(LAUNCH).filter((f) => f.endsWith(".ps1") || f.endsWith(".bat"));
+    for (const f of files) {
+      const lines = readFileSync(join(LAUNCH, f), "utf-8").split(/\r?\n/);
+      for (const line of lines) {
+        const m = /set WF_ROLE=(\S*)(\s+)(&&.*|$)/.exec(line);
+        if (m) {
+          // 值后跟空白再跟 && 或行尾：空格被 cmd 的 set 吃进值里 → WF_ROLE 带尾随空格
+          expect(m[2]!.length, `${f}: set WF_ROLE=${m[1]} 值后有空格（会被 cmd 吃进值，值变 "${m[1]} "）`).toBe(0);
+        }
+      }
+    }
+  });
 });

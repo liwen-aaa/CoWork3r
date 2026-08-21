@@ -23,9 +23,9 @@ if ($running.Count -ge 3) {
   exit 1
 }
 
-$arch   = "title ARCH && cd /d `"$Root`" && set WF_ROLE=arch && pi"
-$dev    = "title DEV && cd /d `"$Root`" && set WF_ROLE=dev && pi"
-$tester = "title TESTER && cd /d `"$Root`" && set WF_ROLE=tester && pi"
+$arch   = "title ARCH && cd /d $Root && set WF_ROLE=arch&& pi"
+$dev    = "title DEV && cd /d $Root && set WF_ROLE=dev&& pi"
+$tester = "title TESTER && cd /d $Root && set WF_ROLE=tester&& pi"
 
 # Single atomic wt command: one window, three VERTICAL panes with ratio 0.3 / 0.35 / 0.35
 # --size = portion of the PARENT pane used to create the NEW pane.
