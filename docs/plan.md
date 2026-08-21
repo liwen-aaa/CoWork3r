@@ -91,7 +91,6 @@
 - [auto] `npm test -- tests/plan` 全绿，含 L1–L9（56 个用例，九个文件名 = 语法条目）
 - [auto] L8 用 `templates/plan.md` 本体作输入，解析成功
 - [auto] L9 用 `tests/fixtures/paper/paper-plan.md`（老仓库真实规划书副本）作输入，解析失败且错误含行号
-- [auto] L1 最小样本（一里程碑一断言、无可省节）解析成功
 - [auto] 本文件（`docs/plan.md`）能被 `parsePlan` 解析成功，且解出 6 个里程碑
 - [human] 用本语法重写一次某个里程碑的断言，全程语法自洽：出现任何「不得不绕过语法、用自然语言糊过去」的地方即判 FAIL
 
@@ -108,11 +107,7 @@
 ### 断言
 
 - [auto] `npm test -- tests/gates` 全绿，含 T1–T10
-- [auto] T2 断言：一条断言的里程碑，产出文件写一行结论即通过（不要求任何固定小节）
-- [auto] T3 断言：漏一条断言时，`reason` 字符串包含缺失的断言编号
-- [auto] T9 断言：结构 gate 不过时，`run-command` 未被调用（用 spy 计数）
 - [auto] T10 用老仓库四份真实 `test-report-M*.md` 副本作输入，四份全部 block
-- [auto] T8 断言：配置 fatal 时 `verdict_pass` 被 block、`review_request` 放行
 - [human] 拦截提示读起来知道下一步该干什么 —— 这是 dev 4/4 与 tester 0/4 的唯一差别来源，措辞质量决定纪律是否被遵守
 
 ### 涉及
@@ -127,13 +122,10 @@
 
 ### 断言
 
-- [auto] `npm test -- tests/adapter tests/e2e` 全绿，含 A1–A9
+- [auto] `npm test -- tests/adapter tests/e2e` 全绿，含 A1–A9 与 E1（E1 = `tests/e2e/` 的完整一圈，规格见 07-adapter 验收节）
 - [auto] A9 前半：`grep -rn "@earendil-works/pi-coding-agent" src/ | grep -v "import type"` 无输出 —— 本条的意思是「pi 在 `src/` 里只以类型存在」，`import type { ExtensionAPI }` 是允许的、被禁的是值导入（常量、工厂函数、任何有运行时的东西）
-- [auto] A9 后半：同进程 `wire()` 三次、各传一个 fake pi → 三份 `channelPaths` 的 root 互不相同（状态隔离），且 A 的 fake pi 上没有收到过 B 注册的工具（注册隔离）
-- [auto] A1 断言 `WF_ROLE="arch "`（尾随空格）时告警文本含 `"arch "`（带引号的 JSON 表示）
 - [auto] A6 断言 `extensions/*.ts` 各 ≤ 30 行、`src/adapter/wire.ts` ≤ 120 行
 - [auto] A4 遍历 `flow.ts` 状态表全部 9 个 type
-- [auto] e2e 骨架：临时目录 fixture 项目跑完整一圈（分发 → 产出 → FAIL → 修 → PASS → `/pass` → 回 arch），断言每步的消息落点与状态变化
 - [human] dev 窗口的 `send_task` 工具面里看不到 `arch` 这个投递目标（**M2 移入**）—— P2 验的是 schema 对象的内容，而 LLM 看到的是 pi 序列化后的工具描述，中间可能丢字段、变形、截断。schema 按角色生成是「越权在类型层不可能」的全部依据
 - [human] 在一个新建空项目里真开三个窗口，跑通一个里程碑 —— 这是唯一能证明「它真的在运行」的事，mock-pi 永远证明不了
 

@@ -223,7 +223,15 @@ tests/adapter/
 └── A9-injection-seam.test.ts   pi 在 src/ 里只以类型存在（grep 非 import type 的值导入）；
                                同进程 wire() 三次各传 fake pi → 三份 channelPaths 的 root 互不相同，
                                且 A 的 fake pi 上没收到过 B 注册的工具
+
+tests/e2e/
+└── E1-full-circle.test.ts      临时目录 fixture 项目跑完整一圈：分发 → 产出 → FAIL → 修 → PASS
+                               → /pass → 回 arch，逐步断言消息落点与状态变化
 ```
+
+**E1 验的是接线，不是 pi 的真实行为。** 它用同进程 mock-pi 驱动三个适配器，事件时序、
+`sendUserMessage` 语义、系统提示注入链都不在其射程内——那是 M6 那条 `[human]`（真开三个窗口）
+存在的理由，不能用 E1 顶掉。mock-pi 需要哪几个 API 到 M6 再读 `wire.ts` 写，不提前猜（算不准就是猜）。
 
 **A6 是抗腐化的。** 老仓库这三个文件从简短涨到 976 行，涨的全是本该在下层的判断。行数上限比评审有效——超了就说明有东西放错了层。
 
