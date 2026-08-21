@@ -88,7 +88,7 @@
 
 ### 断言
 
-- [auto] `npm test -- tests/plan` 全绿，含 L1–L9（56 个用例，九个文件名 = 语法条目）
+- [auto] `npm test -- tests/plan` 全绿，每个用例文件名对应一条语法条目（L<n>）
 - [auto] L8 用 `templates/plan.md` 本体作输入，解析成功
 - [auto] L9 用 `tests/fixtures/paper/paper-plan.md`（老仓库真实规划书副本）作输入，解析失败且错误含行号
 - [auto] 本文件（`docs/plan.md`）能被 `parsePlan` 解析成功，且解出 6 个里程碑
