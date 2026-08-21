@@ -108,6 +108,45 @@ describe("T5 G-command 真跑命令", () => {
     }
   });
 
+  it("shell 报错不是乱码（Windows 的 stderr 走系统代码页，不是 UTF-8）", () => {
+    // 真实发生过：整理拦截文案时发现这条 reason 是
+    // `'wf-no-such-command' \uFFFD\uFFFD\uFFFD\uFFFD\uFFFD在…`。cmd.exe 在中文系统上用 GBK
+    // 写 stderr，而 spawnSync 的 `encoding: "utf-8"` 把它解成了替换字符。
+    //
+    // 这不是美观问题：本层存在的理由就是「拦住之后那句话要告诉人下一步干什么」，
+    // 一堆乱码的 reason 等于没有 reason。
+    const p = makeProject("t5-encoding");
+    try {
+      const r = G_command({
+        root: p.root,
+        command: "wf-definitely-not-a-command-xyz",
+        timeoutMs: 30_000,
+      });
+      if (r.ok) throw new Error("应 block");
+      // U+FFFD = 解码失败的替换字符。一个都不应该有
+      expect(r.reason).not.toContain("\uFFFD");
+      // 命令名（ASCII）任何编码下都该在，用作「确实拿到了 shell 报错」的前提
+      expect(r.reason).toContain("wf-definitely-not-a-command-xyz");
+    } finally {
+      p.cleanup();
+    }
+  });
+
+  it("普通 UTF-8 输出不被回退路径弄坏（中文测试名能原样输出）", () => {
+    const p = makeProject("t5-utf8");
+    try {
+      const r = G_command({
+        root: p.root,
+        command: `node -e "console.log('断言未覆盖：M1.2'); process.exit(1)"`,
+        timeoutMs: 30_000,
+      });
+      if (r.ok) throw new Error("应 block");
+      expect(r.reason).toContain("断言未覆盖：M1.2");
+    } finally {
+      p.cleanup();
+    }
+  });
+
   it("输出很长时 reason 被截断（留尾部，因为报错在末尾）", () => {
     const p = makeProject("t5-long");
     try {

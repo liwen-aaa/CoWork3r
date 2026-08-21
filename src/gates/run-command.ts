@@ -29,6 +29,34 @@ const NAME = "G_command";
 /** reason 里留多少字符的命令输出。800 够看清失败列表，又不会淹掉前面那句话 */
 const TAIL = 800;
 
+/**
+ * 命令输出解码：先严格 UTF-8，不合法则回退 GBK。
+ *
+ * Windows 的 cmd.exe 在中文系统上用 GBK（代码页 936）写 stderr，而 `encoding: "utf-8"`
+ * 会把它解成一串替换字符。实测 `wf-no-such-command` 的报错：
+ *   UTF-8 → `'wf-no-such-command' �����在…`
+ *   GBK   → `'wf-no-such-command' 不是内部或外部命令，也不是可运行的程序`
+ *
+ * 这不是美观问题。本层存在的理由就是「拦住之后那句话要告诉人下一步干什么」
+ * （dev 4/4 与 tester 0/4 的差别全部来自措辞），一堆乱码的 reason 等于没有 reason。
+ *
+ * 顺序是 UTF-8 优先：真实项目的测试输出绝大多数是 UTF-8，只有 shell 自己的报错走
+ * 系统代码页。反过来不行——GBK 能解任意字节、几乎不报错，所以只能拿严格 UTF-8 当判据。
+ */
+function decode(buf: Buffer | null): string {
+  if (buf === null || buf.length === 0) return "";
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(buf);
+  } catch {
+    try {
+      return new TextDecoder("gbk").decode(buf);
+    } catch {
+      // ICU 裁剪版没有 gbk：宽松 UTF-8 至少能读出 ASCII 那部分（命令名、路径）
+      return buf.toString("utf-8");
+    }
+  }
+}
+
 function tail(text: string): string {
   const t = text.trimEnd();
   return t.length <= TAIL ? t : `…（前略）\n${t.slice(-TAIL)}`;
@@ -48,11 +76,12 @@ export function G_command(ctx: {
     shell: true,
     cwd: ctx.root, // 在项目根跑，不在本仓库根跑
     timeout: ctx.timeoutMs,
-    encoding: "utf-8",
+    // 拿 buffer 而不是让 spawnSync 直接解成 utf-8：系统代码页的 stderr 需要回退
+    encoding: "buffer",
     maxBuffer: 32 * 1024 * 1024,
   });
 
-  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+  const out = `${decode(r.stdout)}${decode(r.stderr)}`;
 
   // 超时：spawnSync 给 error.code === "ETIMEDOUT"，status 为 null、signal 为 SIGTERM
   if (r.error && (r.error as NodeJS.ErrnoException).code === "ETIMEDOUT") {
