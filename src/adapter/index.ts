@@ -12,9 +12,11 @@
  * - **消息格式** —— 全在 02-protocol。本层不出现 to: 字面量（A8 会 grep）
  * - **文件路径** —— 全在 01-channel 的 paths.ts
  * - **开窗口** —— 08-dist，而且是人执行（D-33）
- * - **角色激活** —— WF_ROLE 检查在 extensions/*.ts
+ * - **角色激活** —— WF_ROLE 判定在 activate.ts（三份 extensions 各调一次）
  */
 export { wire } from "./wire.ts";
+export { activate } from "./activate.ts";
+export type { WindowRole } from "./activate.ts";
 export { bootBriefing } from "./status.ts";
 export type { BootContext } from "./status.ts";
 export { FLOW } from "./flow.ts";

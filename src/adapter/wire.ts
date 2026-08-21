@@ -27,8 +27,7 @@ import type { SpecRole } from "../roles/index.ts";
 import { bootBriefing } from "./status.ts";
 import { FLOW } from "./flow.ts";
 import { registerCommands } from "./commands.ts";
-
-type WindowRole = Exclude<Role, "human">;
+import type { WindowRole } from "./activate.ts";
 
 /** 从 ctx.cwd 读「当前里程碑对象」（state.milestone → plan → milestone） */
 function currentMilestone(cwd: string) {

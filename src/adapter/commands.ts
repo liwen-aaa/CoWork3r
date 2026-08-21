@@ -9,15 +9,13 @@
  * 每条的判据在它调用的纯函数里，本文件不引入新判据（/doctor 的硬约束）。
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Role } from "../protocol/message.ts";
 import { inspectConfig } from "../config/index.ts";
 import { parsePlan, milestone, checkMilestone, frontier } from "../plan/index.ts";
 import { readState } from "../channel/index.ts";
 import { bootBriefing } from "./status.ts";
 import { research } from "../dist/research.ts";
 import { loadRoleSpec } from "../roles/index.ts";
-
-type WindowRole = Exclude<Role, "human">;
+import type { WindowRole } from "./activate.ts";
 
 export function registerCommands(role: WindowRole, pi: ExtensionAPI): void {
   // ── /status：四行（bootBriefing 是唯一实现，这里只喂真实输入）──
