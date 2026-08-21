@@ -11,45 +11,25 @@
  *
  * 注释也算（改名时 grep 不到注释里那个——plan.md M1 那条同样的教训）。
  */
-import { execSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
-const ROOT = process.cwd();
-
-function grep(pattern: string, dirs: string[]): string {
-  try {
-    return execSync(`grep -rn "${pattern}" ${dirs.join(" ")}`, {
-      cwd: ROOT,
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-  } catch {
-    return ""; // 无匹配 = grep 退出码 1，正好
-  }
-}
+import { grepLines } from "./_fixture.ts";
 
 describe("A8 无字面量", () => {
   it('src/adapter 与 extensions 无 `to: "<role>"` 字面量', () => {
-    const out = grep('to: "arch"\\|to: "dev"\\|to: "tester"\\|to: "human"', [
-      "src/adapter",
-      "extensions",
-    ]);
-    expect(out).toBe("");
+    // node 原生替代 execSync grep（M6-009：cmd 环境无 Git 的 grep，验收 gate 会崩）
+    const out = grepLines(/to: "(arch|dev|tester|human)"/, ["src/adapter", "extensions"]);
+    expect(out).toEqual([]);
   });
 
   it('src/adapter 与 extensions 无 `to-*.json` 文件名字面量', () => {
-    const out = grep("to-arch\\.json\\|to-dev\\.json\\|to-tester\\.json\\|to-human\\.json", [
-      "src/adapter",
-      "extensions",
-    ]);
-    expect(out).toBe("");
+    const out = grepLines(/to-(arch|dev|tester|human)\.json/, ["src/adapter", "extensions"]);
+    expect(out).toEqual([]);
   });
 
   it("配置文件里也不许（templates 除外——模板是给人抄的示例）", () => {
     // 包定义、launch 脚本、extensions 都不能有 to-*.json
-    const out = grep("to-arch\\.json\\|to-dev\\.json\\|to-tester\\.json\\|to-human\\.json", [
-      "launch",
-    ]);
-    expect(out).toBe("");
+    const out = grepLines(/to-(arch|dev|tester|human)\.json/, ["launch"]);
+    expect(out).toEqual([]);
   });
 });

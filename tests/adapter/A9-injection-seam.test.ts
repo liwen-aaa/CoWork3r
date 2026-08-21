@@ -11,23 +11,22 @@
  * 后半的 root 从 ctx.cwd 来：wire 不得把 root 存进模块作用域（D-07 的实义）。
  * 事件在**临时项目**里触发（仓库根没有 wf 配置，readState 会静默返回空态）。
  */
-import { execSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 import { wire } from "../../src/adapter/index.ts";
 import { peek, writeState } from "../../src/channel/index.ts";
 import { sendTaskSchema } from "../../src/protocol/index.ts";
-import { fakePi, makeProject, realConfig, installPlan, assertParamsMatchSchema } from "./_fixture.ts";
-
-const ROOT = process.cwd();
+import { fakePi, grepLines, makeProject, realConfig, installPlan, assertParamsMatchSchema } from "./_fixture.ts";
 
 describe("A9 注入缝", () => {
   it("grep：src/ 里 @earendil-works/pi-coding-agent 只以 import type 出现", () => {
-    const out = execSync(
-      `grep -rn "@earendil-works/pi-coding-agent" src/ | grep -v "import type" || true`,
-      { cwd: ROOT, encoding: "utf-8" },
+    // node 原生替代 execSync grep（M6-009：cmd 环境无 Git 的 grep，验收 gate 的
+    // npm test 会崩）。语义与 `grep -rn X src/ | grep -v "import type"` 一致：
+    // 含包名且不含 "import type" 的行 = 值导入，一个都不能有。
+    const out = grepLines(/@earendil-works\/pi-coding-agent/, ["src"]).filter(
+      (l) => !l.includes("import type"),
     );
-    expect(out).toBe("");
+    expect(out).toEqual([]);
   });
 
   it("同进程 wire() 三次 → A 的 fake pi 上没收到过 B 的事件（注册隔离）", () => {

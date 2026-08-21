@@ -14,7 +14,7 @@
  * root 从哪里来：**从 ctx.cwd**。wire 不得把 root 存进模块作用域（D-07 的实义——
  * 同进程三个角色各持一份 root，A9 验的就是这个）。
  */
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -28,6 +28,31 @@ export const REPO_ROOT = process.cwd();
 
 /** 语法下限那份。M1 两条断言（一 auto 一 human）—— 与 gates 层同一个来源 */
 export const MINIMAL_PLAN = "templates/plan.minimal.md";
+
+/**
+ * 源码文本搜索（node 原生，替代 execSync grep——M6-009：cmd 环境无 Git 的 grep，
+ * 验收 gate 的 npm test 会崩）。语义与 `grep -rn <pattern> <dirs>` 一致：递归
+ * 遍历目录、逐行匹配，返回 `文件:行号: 行内容`（断言失败时能定位）。
+ * 模式必须是**非全局** RegExp（/g 会让 test 变成有状态）。
+ */
+export function grepLines(pattern: RegExp, dirs: string[]): string[] {
+  const walk = (dir: string): string[] =>
+    readdirSync(dir).flatMap((e) => {
+      const full = join(dir, e);
+      return statSync(full).isDirectory() ? walk(full) : [full];
+    });
+  const hits: string[] = [];
+  for (const dir of dirs) {
+    for (const f of walk(dir)) {
+      readFileSync(f, "utf-8")
+        .split(/\r?\n/)
+        .forEach((line, i) => {
+          if (pattern.test(line)) hits.push(`${f}:${i + 1}: ${line}`);
+        });
+    }
+  }
+  return hits;
+}
 
 export function realMilestone(id = "M1"): Milestone {
   const r = parsePlan(REPO_ROOT, MINIMAL_PLAN);

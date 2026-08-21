@@ -175,6 +175,28 @@
  * 已有 guard（state 空 / 非 tui）重合是同一约束的独立面，不是为凑数。
  * 结构性原因未变；阈值仍留 1.0，未动。
  *
+ * ── 2026-08-22 第十次审的结论（A9c 数组形态修正 + M6-009 移植性，红线 2.25）────
+ * 构成 diff（对第九次审 2.25 = src 1946 / tests 4379，实测核对）：
+ *   src   1946 → 1945（-1：wire.ts agent_end 的 user 文本提取兼容 string 与数组两形态）
+ *   tests 4379 → 4378（≈0：A9c 用例③改真实数组形态、A8/A9 的 execSync grep →
+ *                      grepLines 重写、_fixture 新增 grepLines 20 行（无 it））
+ *
+ * 真实行为判据（逐份过增量）：
+ *   A9c 用例③改数组形态   真实行为，且是**对第九次审的修正**：第一版 mock 用 string
+ *                      content 是错误假设——pi 的 followUp 投递在 _queueFollowUp 构造
+ *                      content=[{type:"text",text}]（agent-session.js，真进程复测实证），
+ *                      string 检查在真实链路漏判、死循环继续烧。改数组形态后对旧实现红
+ *                      （stash 验证：仅此用例红）——「测试绿、真实断」的 D-25 形状被修正
+ *   A8/A9 grepLines     真实行为（M6-009）：A9 的 execSync grep 在 cmd 环境（系统/用户
+ *                      PATH 无 Git）崩 → 验收 gate 的 npm test 红 → verdict_pass 全堵死
+ *                      （tester 真进程投递被 block 实证）。node 原生递归遍历等价替换，
+ *                      语义与 grep -rn | grep -v 一致；A8 同缺陷同修（同一根因）
+ *   _fixture grepLines  无 it，只提供等价 grep 的文本搜索（harness 不是测试逻辑）
+ *
+ * 仪式成分：没找到。第十次审要点：第九次审对用例③「真实行为」的结论基于错误 mock
+ * （string），被真进程复测推翻——判据是「测试与真实结构同形状」（D-25），本次修正
+ * 使两者重新对齐，不是放宽判据。结构性原因未变；阈值仍留 1.0，未动。
+ *
  * ── 2026-08-21 第三次审的结论（M5 收尾，红线 2.09）─────────
  * 构成 diff（对上次审 1.95 = src 1115 / tests 2171）：
  *   src   1115 → 1501（+386，全是 src/gates 七个文件）
