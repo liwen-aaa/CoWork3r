@@ -135,4 +135,28 @@ describe("A9 注入缝", () => {
     expect(pi1.tools.length).toBe(pi2.tools.length);
     expect(pi1.sent.length).toBe(0); // 没触发事件就不该有副作用
   });
+
+  it("tool_call 拦截对无 type 的 event 走真实路径（resolveType 推导，非直调 execute）", () => {
+    // M6-007：tool_call 拦截器的 type 推导必须与 execute 同一份（D-03）。
+    // 判别方法：给一个「必然 block」的输入——artifact 指向不存在的文件，G_artifact
+    // 必拦。若拦截器没推导出 review_request（CHAINS["dev:undefined"] 查不到链），
+    // 它会静默放行返回 undefined，本断言红。
+    const p = makeProject("a9-toolcall-no-type");
+    try {
+      realConfig(p.root, { plan: installPlan(p.root) });
+      writeState(p.root, { milestone: "M1", round: 1, maxRounds: 5, consecutiveFails: 0 });
+      const pi = fakePi();
+      wire("dev", pi as never);
+      // 真实 LLM 按 schema 调用：dev 的 schema 没有 type 字段，input 里不带 type
+      const blocked = pi.emit(
+        "tool_call",
+        { toolName: "send_task", input: { milestone: "M1", body: "做完了", artifact: "wf/nope.md" } },
+        { cwd: p.root },
+      );
+      expect(blocked).toMatchObject({ block: true });
+      expect((blocked as { reason: string }).reason).toContain("读不到产出文件");
+    } finally {
+      p.cleanup();
+    }
+  });
 });
