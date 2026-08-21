@@ -175,7 +175,7 @@ M2 R3  失败 1/5
 |---|---|---|
 | 状态 | 01-channel `readState` | 里程碑/轮次/失败计数 |
 | 待人工 | `to-human.json` | D-30：人工关卡不能靠人记得 |
-| 未决 | 04-plan `frontier` | **这条是 wayfinder 的平替** |
+| 未决 | 04-plan `frontier`（[`src/plan/frontier.ts`](../../src/plan/frontier.ts)） | **这条是 wayfinder 的平替** |
 | 降级提示 | 03-config 诊断 | D-23：空 gate 必须有声 |
 
 第三行是关键：`frontier` 算出 `actionable` / `answered` / `blocked` 的条数。你不需要记「有件事没回来」——开窗口就在眼前。
@@ -240,5 +240,5 @@ tests/e2e/
 
 ---
 
-**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ 03-config（已收缩进 `src/config/`） ｜ [04-plan](04-plan.md) ｜ [05-gates](05-gates.md) ｜ 06-roles（已收缩进 `src/roles/`） ｜ 07-adapter（本文）
+**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ 03-config（已收缩进 `src/config/`） ｜ 04-plan（已收缩进 `src/plan/`） ｜ [05-gates](05-gates.md) ｜ 06-roles（已收缩进 `src/roles/`） ｜ 07-adapter（本文）
 **下一个模块**：08-dist（pi package、launch 脚本、澄清入口、research 命令、单实例防重）

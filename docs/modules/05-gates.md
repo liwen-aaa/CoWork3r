@@ -1,7 +1,7 @@
 # 模块 05：gates（拦截判定）
 
 > **职责一句话**：在「宣布完成」之前跑完所有能机械判定的检查，一条不过就 `block`。
-> **依赖**：`node:fs` / `node:child_process`；类型上依赖 03-config 与 04-plan 的输出。
+> **依赖**：`node:fs` / `node:child_process`；类型上依赖 03-config 与 04-plan（`src/plan/`）的输出。
 > **读者**：要加/改 gate 的人。
 >
 > 老仓库对应物：`planQualityGate` / `artifactStructureGate` / `snapshotSource` / `runTestCommand` /
@@ -33,7 +33,7 @@ src/gates/
 
 ### G-plan：arch 分发前
 
-调 `04-plan` 的 `checkMilestone`：里程碑存在、未 passed、至少一条断言、每条断言过 `checkAssertion`。
+调 [`src/plan/`](../../src/plan/index.ts) 的 `checkMilestone`：里程碑存在、未 passed、至少一条断言、每条断言过 `checkAssertion`。
 
 不过 → arch 的 `send_task` 被 block，reason 带行号。堵的是「断言不可测导致 tester 中途不知道拿什么判」。
 
@@ -171,5 +171,5 @@ tests/gates/
 
 ---
 
-**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ 03-config（已收缩进 `src/config/`） ｜ [04-plan](04-plan.md) ｜ 05-gates（本文）
+**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ 03-config（已收缩进 `src/config/`） ｜ 04-plan（已收缩进 `src/plan/`） ｜ 05-gates（本文）
 **下一个模块**：06-roles（三份角色规约 + system prompt 注入 + 注入自检）

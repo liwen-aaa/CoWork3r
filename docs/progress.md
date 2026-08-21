@@ -19,9 +19,8 @@
 
 ## 文档收缩（D-06）
 
-八份模块文档已拆 **4** 份，剩 **4** 份：
+八份模块文档已拆 **5** 份，剩 **3** 份：
 
-- `docs/modules/04-plan.md`
 - `docs/modules/05-gates.md`
 - `docs/modules/07-adapter.md`
 - `docs/modules/08-dist.md`

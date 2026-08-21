@@ -4,6 +4,12 @@
  * 职责：把一份人写的 markdown 变成结构化断言，让四个读者（arch / dev / tester / gate）
  * 绑同一份东西。
  *
+ * 读者：要改断言语法的人看 `grammar.ts`（语法的唯一定义处）。只是要**写**规划书
+ * 的人读 `templates/plan.md` 就够——那份模板本身就是语法的可运行示例（L8 让它进测试）。
+ * 老仓库对应物：`planQualityGate`（约 45 行正则）+ 模板 + 各角色 SKILL 里的引用，三处互不校验。
+ *
+ * 依赖：`node:fs` / `node:crypto`。不 import 其它模块。
+ *
  * ── 为什么它是独立一层 ────────────────────────────────────
  * 老仓库有一件实测确认过的事：`planQualityGate(paper, 'docs/plan.md', 'M1')` → false，
  * M2/M3/M4 同样 false。**四个里程碑全部通不过 gate，而它们全都真的通过了人工验收。**

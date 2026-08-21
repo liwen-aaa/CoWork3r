@@ -97,7 +97,7 @@ skills/plan/SKILL.md
 - 想直接动手了 = 该交棒了（D-11）。
 - 不到签字不写盘。
 
-**写盘前跑一次解析**（04-plan 的 `parsePlan`），格式不对当场报错带行号。这是 D-02 用在澄清阶段——不然格式错要等到 arch 第一次分发才暴露，而那时人已经开完三个窗口了（老仓库四份规划书全部通不过 gate 却没人发现，就是这个原因）。
+**写盘前跑一次解析**（[`src/plan/`](../../src/plan/index.ts) 的 `parsePlan`），格式不对当场报错带行号。这是 D-02 用在澄清阶段——不然格式错要等到 arch 第一次分发才暴露，而那时人已经开完三个窗口了（老仓库四份规划书全部通不过 gate 却没人发现，就是这个原因）。
 
 第二次以后的功能补完**不必跑澄清**——人直接手写一节，格式由 gate 兜。澄清 skill 只用在项目开头和「我又想不清楚了」的时候。
 
@@ -111,12 +111,12 @@ skills/plan/SKILL.md
 /research P2 --redo  已回的重查（覆盖旧 note，要求显式确认）
 ```
 
-**序号是 `Pending.id`（P1 / P2…）**，不是行号、不是展示序号。id 由 04-plan 解析时分配，删行不回收——
+**序号是 `Pending.id`（P1 / P2…）**，不是行号、不是展示序号。id 由 `src/plan/` 解析时从文本读，删行不回收——
 所以你在 `/status` 里看到的 P2，和一小时后打的 `/research P2` 是同一条，即使中间删了别的行。
 
 ### 状态机
 
-`Pending.status` 三态，与 04-plan 的 `frontier` 输出一一对应：
+`Pending.status` 三态，与 `src/plan/` 的 `frontier` 输出一一对应：
 
 ```
 open ──/research──> querying ──成功──> answered
@@ -166,7 +166,7 @@ open ──/research──> querying ──成功──> answered
 
 ```ts
 const { cfg, diagnostics } = inspectConfig(root);        // 03-config
-const plan = cfg && parsePlan(root, cfg.plan);            // 04-plan
+const plan = cfg && parsePlan(root, cfg.plan);            // src/plan
 // 打印 diagnostics + plan 错误 + 首个未 passed 里程碑的 checkMilestone 结果
 ```
 
@@ -224,6 +224,6 @@ tests/dist/
 
 ---
 
-**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ 03-config（已收缩进 `src/config/`） ｜ [04-plan](04-plan.md) ｜ [05-gates](05-gates.md) ｜ 06-roles（已收缩进 `src/roles/`） ｜ [07-adapter](07-adapter.md) ｜ 08-dist（本文）
+**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ 03-config（已收缩进 `src/config/`） ｜ 04-plan（已收缩进 `src/plan/`） ｜ [05-gates](05-gates.md) ｜ 06-roles（已收缩进 `src/roles/`） ｜ [07-adapter](07-adapter.md) ｜ 08-dist（本文）
 
 **架构文档完整。** 下一步见 [模块清单](README.md#下一步)。

@@ -30,7 +30,7 @@
 | 01 | channel | 🧹 | 消息写下 → 对方被唤醒读到，重启不丢、并发不乱。**文档已拆**：职责与边界 → [`src/channel/index.ts`](../../src/channel/index.ts) 文件头，磁盘布局 → `paths.ts`，单槽位取舍 → `inbox.ts`，C1–C8 设计点 → [`tests/channel/`](../../tests/channel/) 用例名与注释 |
 | 02 | protocol | 🧹 | 谁能给谁发什么；路由/schema/文档都从一张表派生。**文档已拆**：为什么独立一层 / 一表四处派生 / 不负责什么 → [`src/protocol/index.ts`](../../src/protocol/index.ts) 文件头，与老仓库的四处差异 → `routes.ts`，两个函数为何分开 → `build.ts`，P1–P5 设计点 → [`tests/protocol/`](../../tests/protocol/) 用例名与注释，通道表与流转图 → [`docs/protocol.md`](../protocol.md)（生成物） |
 | 03 | config | 🧹 | 项目事实的唯一落点；配错必须吵，不配可以静默。**文档已拆**：为什么独立一层 / 不负责什么 / 取舍 → [`src/config/index.ts`](../../src/config/index.ts) 文件头，字段语义与 legacy 名单 → `fields.ts`，诊断分级判据 → `inspect.ts`，可运行示例 → [`templates/wf.config.json`](../../templates/wf.config.json)，G1–G6 设计点 → [`tests/config/`](../../tests/config/) 用例名与注释 |
-| 04 | [plan](04-plan.md) | ✅ | 规划书解析；`[auto]`/`[human]` 断言语法定义在这里 |
+| 04 | plan | 🧹 | 规划书解析；`[auto]`/`[human]` 断言语法定义在这里。**文档已拆**：职责 / 为什么独立一层 / 不负责什么 → [`src/plan/index.ts`](../../src/plan/index.ts) 文件头，S1–S7 语法 → `grammar.ts`，三段式与报错带行号 → `parse.ts`，wayfinder 平替 → `frontier.ts`，数据结构 → `types.ts`，L1–L9 设计点 → [`tests/plan/`](../../tests/plan/) 用例名与注释，可运行示例 → [`templates/plan.md`](../../templates/plan.md) |
 | 05 | [gates](05-gates.md) | ✅ | 纯函数判定：断言可测、产出结构、快照、真跑命令、人的问题 |
 | 06 | roles | 🧹 | 三份静态规约 + system prompt 注入 + 注入自检。**文档已拆**：为什么不用 pi skill / 三类内容切分 / 取舍 → [`src/roles/index.ts`](../../src/roles/index.ts) 文件头，加载与拼接与特征串 → `inject.ts`，规约本体 → `arch.md` `dev.md` `tester.md`，R1–R6 设计点 → [`tests/roles/`](../../tests/roles/) 用例名与注释 |
 | 07 | [adapter](07-adapter.md) | ✅ | 三个薄扩展：接线、确定性状态流转、/status |
@@ -65,7 +65,7 @@
 | 路径 | 是什么 |
 |---|---|
 | [`../disciplines.md`](../disciplines.md) | 纪律台账：判据 + 落点。**动手前读** |
-| [`../../templates/plan.md`](../../templates/plan.md) | 规划书骨架 = 04-plan 解析器语法的可运行示例 |
+| [`../../templates/plan.md`](../../templates/plan.md) | 规划书骨架 = [`src/plan/grammar.ts`](../../src/plan/grammar.ts) 语法的可运行示例 |
 | `../constitution.md` | 老仓库 30 条事故约束（待迁移，编号 A1–F3 不变） |
 | [`../inherited/HANDOFF.md`](../inherited/HANDOFF.md) | 老仓库交接文件（备查，非现行设计） |
 | [`../inherited/old-README.md`](../inherited/old-README.md) | 老仓库 README（备查，描述的是已废弃形态） |
