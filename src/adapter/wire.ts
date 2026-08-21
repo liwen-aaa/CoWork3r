@@ -9,8 +9,8 @@
  * 三份 extensions 各调 `activate(role, pi)`，匹配 WF_ROLE 才到这里。
  *
  * ── 钩子与工具 ────────────────────────────────────────────
- * session_start → 简报；before_agent_start → 注入规约；agent_start → 自检；
- * tool_call → 跑链；agent_end → 未投递提醒。send_task = LLM 唯一投递口。
+ * session_start → 简报；before/agent_start → 注入与自检；tool_call → 跑链；
+ * agent_end → 未投递提醒（防 followUp 自循环，见 A9c）。send_task = 唯一投递口。
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { build, checkRoute, resolveType, sendTaskDescription, sendTaskSchema, typesFrom } from "../protocol/index.ts";
@@ -34,7 +34,6 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     if (!cfg) return { ok: false, reason: "配置解析失败" };
     const parsed = parsePlan(cwd, cfg.plan);
     if (!parsed.ok) return { ok: false, reason: parsed.errors[0]!.message };
-    // 单 type 角色（dev）：schema 省掉 type，从 role 推导；多 type 角色 schema 有枚举由 LLM 选
     const type = resolveType(role, input);
     if (!type) return { ok: false, reason: `缺少 type（${role} 可发：${typesFrom(role).join(" / ")}）` };
     const msg = build(type, role, { ...input, from: role });
@@ -75,9 +74,8 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
       milestone: m,
       diagnostics,
     });
-    // --print / rpc 模式没有可投递的会话窗口：sendUserMessage 会与正在处理的
-    // 消息冲突（"Agent is already processing"）。身份注入走 before_agent_start
-    // 改 systemPrompt，不依赖这里。TUI 才发就绪通知。
+    // --print / rpc 无会话窗口：sendUserMessage 会与处理中的消息冲突，TUI 才发就绪
+    // （身份注入走 before_agent_start 改 systemPrompt，不依赖这里）
     if (ctx.mode === "tui") {
       pi.sendUserMessage(`wf: ${role} 就绪\n${brief}`, { deliverAs: "followUp" });
     }
@@ -87,8 +85,7 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     systemPrompt: buildSystemPrompt(role as SpecRole, event.systemPrompt),
   }));
 
-  // 注入自检（P1 的机制落点）：agent_start 在 systemPrompt 定稿后触发，
-  // 检查规约特征串还在不在——被别的扩展整体替换掉时无任何症状，必须出声。
+  // 注入自检（P1 机制落点）：agent_start 时查特征串，被替换必须出声（静默症状）
   pi.on("agent_start", (_event, ctx) => {
     checkInjectedSpec(role, ctx.getSystemPrompt());
   });
@@ -99,7 +96,7 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     if (!cfg) return;
     const parsed = parsePlan(ctx.cwd, cfg.plan);
     if (!parsed.ok) return;
-    const type = resolveType(role, event.input); // 单 type 角色省掉 type 字段（D-03：与 execute 同一份推导）
+    const type = resolveType(role, event.input);
     if (!type) return { block: true, reason: `缺少 type（${role} 可发：${typesFrom(role).join(" / ")}）` };
     const stateM = milestone(parsed.plan, readState(ctx.cwd).milestone);
     const guard = guardNoMilestone(type, stateM, event.input.milestone, parsed.plan);
@@ -110,8 +107,12 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     if (!r.ok) return { block: true, reason: r.reason };
   });
 
-  pi.on("agent_end", (_event, ctx) => {
+  pi.on("agent_end", (event, ctx) => {
     if (readState(ctx.cwd).milestone === "" || ctx.mode !== "tui") return; // 无里程碑或 print/rpc 无会话窗口
+    const ms = event.messages;
+    // 已投递或本轮由上一条提醒触发 → 不再提醒（followUp 自触发新回合 = 死循环，实测 2026-08-22）
+    const sent = ms.some((m) => (m.role === "assistant" && m.content.some((c) => c.type === "toolCall" && c.name === "send_task")) || (m.role === "user" && typeof m.content === "string" && m.content.startsWith("wf: 本轮结束")));
+    if (sent) return;
     pi.sendUserMessage("wf: 本轮结束。若已完成请调 send_task 投出去。", { deliverAs: "followUp" });
   });
 }
