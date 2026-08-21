@@ -33,6 +33,8 @@ export type Message = {
   refs?: string[];
   /** fix_request */
   issues?: Issue[];
+  /** review_request / fix_request / verdict_pass：产出/报告文件路径（G_artifact 读它） */
+  artifact?: string;
   /** verdict_pass：只有人能答的那几个问题 */
   questions?: string[];
   /** milestone_passed：人写的验证凭证 */

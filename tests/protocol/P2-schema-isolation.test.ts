@@ -73,4 +73,17 @@ describe("P2 schema 按角色隔离", () => {
       expect(schema.properties && "to" in schema.properties).toBe(false);
     }
   });
+
+  it("gates 消费的 input 字段都在 schema 里（artifact / questions，M6-004）", () => {
+    // G_artifact_dev / G_artifact_report 从 input.artifact 读产出路径，
+    // G_human 从 input.questions 读问题。它们必须出现在 schema 的 properties 里——
+    // 否则真实 pi 会拒传（additionalProperties: false），G_artifact 必然 block
+    // （M6-003 的真实故障形状：schema 缺 artifact → dev/tester 投递断裂）。
+    // 删掉 FIELDS / union 基础集里的任一字段，这里立刻红。
+    const dev = sendTaskSchema("dev") as { properties?: Record<string, unknown> };
+    const tester = sendTaskSchema("tester") as { properties?: Record<string, unknown> };
+    expect(dev.properties && "artifact" in dev.properties).toBe(true);
+    expect(tester.properties && "artifact" in tester.properties).toBe(true);
+    expect(tester.properties && "questions" in tester.properties).toBe(true);
+  });
 });

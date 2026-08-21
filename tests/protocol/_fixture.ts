@@ -36,6 +36,7 @@ export function makeRoot(label: string): { root: string; cleanup: () => void } {
 const SAMPLES: Record<string, unknown> = {
   milestone: "M1",
   body: "fixture body",
+  artifact: "wf/dev-output-M1.md",
   round: 1,
   issues: [{ id: "M1-001", severity: "serious", assertion: "M1.1", description: "fixture issue" }],
   questions: ["这条只有人能答：文件内容读起来是句人话吗"],

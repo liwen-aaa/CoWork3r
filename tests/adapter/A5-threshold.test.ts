@@ -26,21 +26,21 @@ describe("A5 阈值升级", () => {
 
       const r1 = FLOW.fix_request({
         root: p.root,
-        msg: build("fix_request", "tester", { milestone: "M1", issues: [ISSUE] }),
+        msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [ISSUE] }),
         milestone: m,
       });
       expect(r1.escalate).toBeUndefined();
 
       const r2 = FLOW.fix_request({
         root: p.root,
-        msg: build("fix_request", "tester", { milestone: "M1", issues: [ISSUE] }),
+        msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [ISSUE] }),
         milestone: m,
       });
       expect(r2.escalate).toBeUndefined();
 
       const r3 = FLOW.fix_request({
         root: p.root,
-        msg: build("fix_request", "tester", { milestone: "M1", issues: [ISSUE] }),
+        msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [ISSUE] }),
         milestone: m,
       });
       expect(r3.escalate).toBeDefined();
@@ -56,10 +56,10 @@ describe("A5 阈值升级", () => {
       const m = realMilestone("M1");
       const other = { id: "M1-002", severity: "medium" as const, description: "另一个问题" };
 
-      FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", issues: [ISSUE] }), milestone: m });
-      FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", issues: [ISSUE] }), milestone: m });
+      FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [ISSUE] }), milestone: m });
+      FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [ISSUE] }), milestone: m });
       // 不同 issue 第 2 次出现，不该触发
-      const r = FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", issues: [other] }), milestone: m });
+      const r = FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [other] }), milestone: m });
       expect(r.escalate).toBeUndefined();
     } finally {
       p.cleanup();
@@ -70,10 +70,10 @@ describe("A5 阈值升级", () => {
     const p = makeProject("a5-repeat");
     try {
       const m = realMilestone("M1");
-      FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", issues: [ISSUE] }), milestone: m });
-      FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", issues: [ISSUE] }), milestone: m });
-      FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", issues: [ISSUE] }), milestone: m });
-      const r4 = FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", issues: [ISSUE] }), milestone: m });
+      FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [ISSUE] }), milestone: m });
+      FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [ISSUE] }), milestone: m });
+      FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [ISSUE] }), milestone: m });
+      const r4 = FLOW.fix_request({ root: p.root, msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [ISSUE] }), milestone: m });
       // bumpCounters 只报本次涉及的 id——已超阈值的旧 id 不该反复触发（counters.ts 的注释）
       // 但同一 issue 再次出现，仍然算本次涉及
       expect(r4.escalate).toContain("M1-001");

@@ -32,19 +32,19 @@ export const ROUTES = {
   review_request: {
     from: "dev",
     to: "tester",
-    requires: ["milestone", "body"],
+    requires: ["milestone", "body", "artifact"],
     description: "开发完成，请求验收",
   },
   fix_request: {
     from: "tester",
     to: "dev",
-    requires: ["milestone", "issues"],
+    requires: ["milestone", "issues", "artifact"],
     description: "验收 FAIL，发回修复",
   },
   verdict_pass: {
     from: "tester",
     to: "human",
-    requires: ["milestone", "questions"],
+    requires: ["milestone", "questions", "artifact"],
     description: "自动验证通过，等人答 [human] 断言",
   },
   milestone_passed: {

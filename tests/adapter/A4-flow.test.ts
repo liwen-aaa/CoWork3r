@@ -48,7 +48,7 @@ describe("A4 flow 状态表", () => {
       FLOW.task_assignment({ root: p.root, msg: build("task_assignment", "arch", { milestone: "M1", body: "去干" }), milestone: m });
       FLOW.fix_request({
         root: p.root,
-        msg: build("fix_request", "tester", { milestone: "M1", issues: [{ id: "M1-001", severity: "serious", description: "不行" }] }),
+        msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [{ id: "M1-001", severity: "serious", description: "不行" }] }),
         milestone: m,
       });
       const s = readState(p.root);
@@ -66,7 +66,7 @@ describe("A4 flow 状态表", () => {
       FLOW.task_assignment({ root: p.root, msg: build("task_assignment", "arch", { milestone: "M1", body: "去干" }), milestone: m });
       FLOW.fix_request({
         root: p.root,
-        msg: build("fix_request", "tester", { milestone: "M1", issues: [{ id: "M1-001", severity: "serious", description: "不行" }] }),
+        msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [{ id: "M1-001", severity: "serious", description: "不行" }] }),
         milestone: m,
       });
       FLOW.milestone_passed({
@@ -94,7 +94,7 @@ describe("A4 flow 状态表", () => {
       for (let i = 0; i < cfg.maxRounds; i++) {
         last = FLOW.fix_request({
           root: p.root,
-          msg: build("fix_request", "tester", { milestone: "M1", issues: [{ id: `M1-00${i}`, severity: "serious", description: `第 ${i + 1} 次` }] }),
+          msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [{ id: `M1-00${i}`, severity: "serious", description: `第 ${i + 1} 次` }] }),
           milestone: m,
         });
       }
@@ -117,14 +117,14 @@ describe("A4 flow 状态表", () => {
       FLOW.task_assignment({ root: p.root, msg: build("task_assignment", "arch", { milestone: "M1", body: "去干" }), milestone: m });
       FLOW.fix_request({
         root: p.root,
-        msg: build("fix_request", "tester", { milestone: "M1", issues: [{ id: "M1-001", severity: "serious", description: "不行" }] }),
+        msg: build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [{ id: "M1-001", severity: "serious", description: "不行" }] }),
         milestone: m,
       });
       const before = readState(p.root);
 
       FLOW.verification({ root: p.root, msg: build("verification", "arch", { milestone: "M1", body: "核对一下" }), milestone: m });
-      FLOW.review_request({ root: p.root, msg: build("review_request", "dev", { milestone: "M1", body: "做完了" }), milestone: m });
-      FLOW.verdict_pass({ root: p.root, msg: build("verdict_pass", "tester", { milestone: "M1", questions: ["能过吗"] }), milestone: m });
+      FLOW.review_request({ root: p.root, msg: build("review_request", "dev", { milestone: "M1", body: "做完了", artifact: "wf/dev-output-M1.md" }), milestone: m });
+      FLOW.verdict_pass({ root: p.root, msg: build("verdict_pass", "tester", { milestone: "M1", questions: ["能过吗"], artifact: "wf/test-report-M1.md" }), milestone: m });
       FLOW.escalation({ root: p.root, msg: build("escalation", "tester", { milestone: "M1", body: "有问题" }), milestone: m });
       FLOW.report({ root: p.root, msg: build("report", "arch", { body: "进度汇报" }), milestone: m });
       FLOW.stuck({ root: p.root, msg: build("stuck", "tester", { milestone: "M1", body: "卡住了" }), milestone: m });
