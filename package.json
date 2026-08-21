@@ -2,9 +2,16 @@
   "name": "work-flow",
   "version": "0.0.0",
   "description": "三窗口协作工作流：把「AI 谎报完成」堵在机制层",
+  "keywords": ["pi-package", "workflow"],
   "type": "module",
   "engines": {
     "node": ">=22.19.0"
+  },
+  "peerDependencies": {
+    "typebox": "*"
+  },
+  "pi": {
+    "extensions": ["./extensions"]
   },
   "scripts": {
     "pretest": "npm run check:disciplines && npm run check:testsize",
