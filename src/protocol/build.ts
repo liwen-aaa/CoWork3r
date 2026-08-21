@@ -145,3 +145,17 @@ export function checkRoute(msg: Message): { ok: true } | { ok: false; reason: st
 export function typesFrom(role: Role): MsgType[] {
   return TYPES.filter((t) => ROUTES[t].from === role);
 }
+
+/**
+ * 从「角色 + 调用方输入」推导 type（D-03：一处权威，两处消费）。
+ *
+ * 多 type 角色（arch/tester）：schema 有枚举，LLM 必须显式传 type。
+ * 单 type 角色（dev 只有 review_request）：schema 省掉 type 字段，从 role 推导。
+ *
+ * execute（deliverMsg）与 tool_call 拦截器共用这一份——各自实现就是 D-03 要防的
+ * 双写：一处改推导规则另一处忘改，拦截器与投递对同一输入的判断就分叉。
+ */
+export function resolveType(role: Role, input: Record<string, unknown>): MsgType | undefined {
+  const types = typesFrom(role);
+  return (input.type as MsgType | undefined) ?? (types.length === 1 ? types[0] : undefined);
+}

@@ -13,8 +13,7 @@
  * tool_call → 跑链；agent_end → 未投递提醒。send_task = LLM 唯一投递口。
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { build, checkRoute, sendTaskDescription, sendTaskSchema, typesFrom } from "../protocol/index.ts";
-import type { MsgType } from "../protocol/message.ts";
+import { build, checkRoute, resolveType, sendTaskDescription, sendTaskSchema, typesFrom } from "../protocol/index.ts";
 import { inspectConfig } from "../config/index.ts";
 import { parsePlan, milestone } from "../plan/index.ts";
 import { deliver, readState } from "../channel/index.ts";
@@ -36,9 +35,8 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     const parsed = parsePlan(cwd, cfg.plan);
     if (!parsed.ok) return { ok: false, reason: parsed.errors[0]!.message };
     // 单 type 角色（dev）：schema 省掉 type，从 role 推导；多 type 角色 schema 有枚举由 LLM 选
-    const types = typesFrom(role);
-    const type = (input.type as MsgType | undefined) ?? (types.length === 1 ? types[0] : undefined);
-    if (!type) return { ok: false, reason: `缺少 type（${role} 可发：${types.join(" / ")}）` };
+    const type = resolveType(role, input);
+    if (!type) return { ok: false, reason: `缺少 type（${role} 可发：${typesFrom(role).join(" / ")}）` };
     const msg = build(type, role, { ...input, from: role });
     const r = deliver(cwd, msg, checkRoute);
     if (!r.ok) return { ok: false, reason: r.reason };
@@ -101,8 +99,8 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     if (!cfg) return;
     const parsed = parsePlan(ctx.cwd, cfg.plan);
     if (!parsed.ok) return;
-    const types = typesFrom(role); // 单 type 角色省掉 type 字段，从 role 推导（否则链查不到 = 拦截失效）
-    const type = String(event.input.type ?? (types.length === 1 ? types[0] : undefined));
+    const type = resolveType(role, event.input); // 单 type 角色省掉 type 字段（D-03：与 execute 同一份推导）
+    if (!type) return { block: true, reason: `缺少 type（${role} 可发：${typesFrom(role).join(" / ")}）` };
     const stateM = milestone(parsed.plan, readState(ctx.cwd).milestone);
     const guard = guardNoMilestone(type, stateM, event.input.milestone, parsed.plan);
     if (!guard.allow) return { block: true, reason: guard.reason };
