@@ -84,10 +84,11 @@ describe("L7 未决表解析（pending）", () => {
     }
     expect(human.filter((x) => x.owner !== undefined).length).toBe(human.length);
 
-    // 「—— [auto] 待查 ——」这段
+    // [auto] 条目的 kind 从标记段解出。**status 不在这里断言**——它随文档演进
+    // （待查→查中→已回，2026-08 P1/P2 已定案标 answered），「auto 全 open」
+    // 是快照断言，会被正常演进击穿。status 的解析属于 L7-frontier 的领域。
     const auto = pending.filter((x) => x.kind === "auto");
     expect(auto.length).toBeGreaterThan(0);
-    for (const a of auto) expect(a.status).toBe("open");
   });
 
   it("正文里含 `——` → 段位不错位（标记段按内容认，不按位置数）", () => {
@@ -100,10 +101,11 @@ describe("L7 未决表解析（pending）", () => {
       const r = parsePlan(f.root, f.rel);
       if (!r.ok) throw new Error(`不该报错：${JSON.stringify(r.errors)}`);
       const p1 = r.plan.pending.find((x) => x.id === "P1")!;
-      // 三段式的段数不固定：正文自己可以带破折号。标记与前置靠内容定位
+      // 三段式的段数不固定：正文自己可以带破折号。标记与前置靠内容定位。
+      // text 拼接验证段位不错位；status 随文档演进（P1 已 answered），不断言
       expect(p1.kind).toBe("auto");
-      expect(p1.status).toBe("open");
       expect(p1.text).toContain("也就是那个特征串");
+      expect(p1.text).toContain("MARK 自检");
     } finally {
       f.cleanup();
     }

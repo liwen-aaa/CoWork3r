@@ -26,6 +26,8 @@ const FIELDS: Record<string, JsonSchema> = {
   round: { type: "number", description: "当前轮次" },
   body: { type: "string", description: "正文" },
   refs: { type: "array", items: { type: "string" }, description: "相关文件路径" },
+  /** G_artifact 读它：产出/报告文件的项目根相对路径（dev 产出或 tester 报告） */
+  artifact: { type: "string", description: "产出文件的项目根相对路径（如 wf/dev-output-M1.md）。G_artifact 会读它检查断言覆盖" },
   issues: {
     type: "array",
     description: "问题列表。每条关联一个断言编号，缺了会被产出结构 gate 拦下",
@@ -89,7 +91,7 @@ export function sendTaskSchema(role: Role): JsonSchema {
   );
 
   // 可选 = 该角色可能用到的全部字段减去必填
-  const union = new Set<string>(["round", "refs"]);
+  const union = new Set<string>(["round", "refs", "artifact"]);
   for (const s of requiredSets) for (const k of s) union.add(k);
 
   for (const key of [...intersection, ...[...union].filter((k) => !intersection.includes(k))]) {

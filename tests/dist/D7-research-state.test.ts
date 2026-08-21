@@ -30,7 +30,15 @@ function project() {
   const src = readFileSync(join(process.cwd(), "docs/plan.md"), "utf-8");
   const rel = "docs/plan.md";
   mkdirSync(join(root, "docs"), { recursive: true });
-  writeFileSync(join(root, rel), src, "utf-8");
+  // P2 已在真实文档中 answered（2026-08 arch 定案，answerRef 指向 wf/notes/）。
+  // 状态机测试需要 open 起点：从真实行出发把 P2 的标记段重置为「[auto] 待查」
+  //（不手写整行，D-25 仍成立；status 演进不依赖具体形态）
+  const open = src.split("\n").map((l) =>
+    l.startsWith("- P2 ")
+      ? l.replace(/\[auto\]\s*已回\s*→\s*\S+/, "[auto] 待查")
+      : l,
+  );
+  writeFileSync(join(root, rel), open.join("\n"), "utf-8");
   return {
     root,
     rel,

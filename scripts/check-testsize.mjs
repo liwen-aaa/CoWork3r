@@ -83,6 +83,26 @@
  * 上次记的 L7 负债已还（拆成 L7-pending + L7-frontier，236 → 116+152）。
  * 结构性原因未变；阈值仍留 1.0，未动。
  *
+ * ── 2026-08-21 第五次审的结论（M6 收尾后，红线 2.19）─────────
+ * 构成 diff（对上次审 2.28 = src 1681 / tests 3703）：
+ *   src   1681 → 1804（+123：commands 135 含注释、activate 37、selfcheck 23、
+ *                      research 89、wire 净增（ctx.mode 守卫 + agent_start 自检））
+ *   tests 3703 → 3845（+142：tests/dist 318 全新增，tests/plan +21，tests/adapter +27）
+ *
+ * 逐份过 tests/dist（D1–D7），判据是「测真实行为还是测仪式」：
+ *   D1/D2 包清单与 peerDep  真实行为（pi 发现扩展 / typebox 故障类别的防护）
+ *   D3/D4 launch ASCII/空格  真实行为（老仓库两次真实事故的生成物侧）
+ *   D5   plan skill         真实行为（不复述模板的 D-04 判据）
+ *   D6   接入路径           真实行为（老仓库从没测过的「从零接入」）
+ *   D7   research 状态机     真实行为（open→querying→answered + 回退）
+ *
+ * 仪式成分：没找到。D4 逮到一个真实 bug（trio.ps1 的 set WF_ROLE=dev && pi
+ * 空格被 cmd 吃进值 → WF_ROLE 带尾随空格 → 窗口静默不激活），修 + 补判据。
+ * D7 被真实流程击穿过一次（P2 在真实文档 answered 后状态机测试前提不成立），
+ * 已改为从真实行重置起点——测试适应数据演进，不是放宽判据。
+ *
+ * 结构性原因未变；阈值仍留 1.0，未动。
+ *
  * ── 2026-08-21 第三次审的结论（M5 收尾，红线 2.09）─────────
  * 构成 diff（对上次审 1.95 = src 1115 / tests 2171）：
  *   src   1115 → 1501（+386，全是 src/gates 七个文件）

@@ -141,11 +141,12 @@
 
 - **mock-pi 的保真度**：e2e 用同进程 mock 驱动三个适配器，它验的是接线正确，不验 pi 真实行为（事件时序、`sendUserMessage` 语义、系统提示注入链）。这是 `[human]` 那条存在的理由，不能用 e2e 顶掉。
 - **mock-pi 的 API 清单不预先定**：它等于「wire.ts 碰了 pi 对象上的哪几个方法」，M1–M5 之前写出来是猜。事后补不回来的只有注入缝，那一条已由 A9 钉住（D-07）。
+- **注入自检未接通（P1 定案引出）**：`specPresent` 只有纯函数 + R5 单测，**无任何调用点**。R5 测试头注释声明「M6 负责把它挂到 agent_start 上并接 notify」，但 `wire.ts` 只挂了 session_start / before_agent_start / tool_call / agent_end 四个钩子，没有 agent_start。后果：「规约被后续扩展整份替换」时窗口正常、工具在、仅模型不知道自己是谁（inject.ts 头注释描述的正是这个静默症状）。pi 机制上支持修复：`agent_start` + `ctx.getSystemPrompt()` 能拿到 agent 层最终 prompt（此时 before_agent_start 链已走完）；注意 `getSystemPrompt` 不反映 `before_provider_request` 的 payload 级重写（extensions.md 明言），自检覆盖的是 before_agent_start 链。**M6 断言表没有覆盖这条**（A9 只拦 pi 值导入）。建议由人定：① 补一条断言（如 [auto] 断言 `specPresent(` 在 src/adapter/ 有调用点，或 E1 扩展验注入被替换后告警）；② 显式接受缺口，删掉 R5 注释里那句「M6 负责」；③ 挪到后续里程碑。不补的后果：R5 单测在测一个不会运行的函数。
 
 ## 未决
 
-- P1 规约注入被后续扩展替换掉时，MARK 自检能不能真的发现 —— [auto] 待查 —— 前置：无
-- P2 pi 的 `before_agent_start` 在 `--print` 模式（无 TUI）下是否照常触发 —— [auto] 待查 —— 前置：无
+- P1 规约注入被后续扩展替换掉时，MARK 自检能不能真的发现 —— 结论：当前不能（`specPresent` 无调用点）；机制上能（`agent_start` + `ctx.getSystemPrompt()` 可拿最终 prompt） —— [auto] 已回 → wf/notes/p1-mark.md —— 前置：无
+- P2 pi 的 `before_agent_start` 在 `--print` 模式（无 TUI）下是否照常触发 —— 结论：照常触发（print 模式扩展照常运行，agent 事件链完整；UI 专属调用已由 `ctx.mode` 守卫，注入不依赖 UI） —— [auto] 已回 → wf/notes/p2-pi-before-agent-st.md —— 前置：无
 - P3 单窗口降级要不要给 `dev-only` 启动脚本 —— [human] 归我 —— 前置：P2
 - P5 M6 那条人工断言用什么任务来跑 —— [human] 归我 —— 前置：无
 - P6 commit 权从手工移交 tester `/pass` 的分界点 —— [human] 归我 —— 前置：P5

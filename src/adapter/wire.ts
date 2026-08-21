@@ -16,7 +16,6 @@
  * agent_end → 未投递提醒。send_task 工具 = LLM 唯一投递口（build+deliver+flow）。
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Role } from "../protocol/message.ts";
 import { build, checkRoute, sendTaskDescription, sendTaskSchema } from "../protocol/index.ts";
 import { inspectConfig } from "../config/index.ts";
 import { parsePlan, milestone } from "../plan/index.ts";
@@ -27,16 +26,8 @@ import type { SpecRole } from "../roles/index.ts";
 import { bootBriefing } from "./status.ts";
 import { FLOW } from "./flow.ts";
 import { registerCommands } from "./commands.ts";
+import { checkInjectedSpec } from "./selfcheck.ts";
 import type { WindowRole } from "./activate.ts";
-
-/** 从 ctx.cwd 读「当前里程碑对象」（state.milestone → plan → milestone） */
-function currentMilestone(cwd: string) {
-  const { cfg } = inspectConfig(cwd);
-  if (!cfg) return null;
-  const parsed = parsePlan(cwd, cfg.plan);
-  if (!parsed.ok) return null;
-  return milestone(parsed.plan, readState(cwd).milestone);
-}
 
 export function wire(role: WindowRole, pi: ExtensionAPI): void {
   /** 投递 + 推进状态。from 由 role 决定（越权在类型层不可能）；to 由 ROUTES 决定 */
@@ -96,6 +87,12 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     systemPrompt: buildSystemPrompt(role as SpecRole, event.systemPrompt),
   }));
 
+  // 注入自检（P1 的机制落点）：agent_start 在 systemPrompt 定稿后触发，
+  // 检查规约特征串还在不在——被别的扩展整体替换掉时无任何症状，必须出声。
+  pi.on("agent_start", (_event, ctx) => {
+    checkInjectedSpec(role, ctx.getSystemPrompt());
+  });
+
   pi.on("tool_call", (event, ctx) => {
     if (event.toolName !== "send_task") return;
     const { cfg } = inspectConfig(ctx.cwd);
@@ -115,5 +112,3 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     pi.sendUserMessage("wf: 本轮结束。若已完成请调 send_task 投出去。", { deliverAs: "followUp" });
   });
 }
-
-export { currentMilestone };
