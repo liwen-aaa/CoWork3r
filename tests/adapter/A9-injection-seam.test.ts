@@ -16,6 +16,7 @@ import { describe, expect, it } from "vitest";
 
 import { wire } from "../../src/adapter/index.ts";
 import { writeState } from "../../src/channel/index.ts";
+import { sendTaskSchema } from "../../src/protocol/index.ts";
 import { fakePi, makeProject, realConfig, installPlan } from "./_fixture.ts";
 
 const ROOT = process.cwd();
@@ -72,6 +73,26 @@ describe("A9 注入缝", () => {
       expect(piA.sent.length).toBe(beforeA);
     } finally {
       p.cleanup();
+    }
+  });
+
+  it("send_task 工具面 = sendTaskSchema(role)：dev 的 schema 里没有 arch 的 type", () => {
+    // M6.5 的自动化部分：wire 注册的工具必须用 sendTaskSchema(role) 生成，
+    // 不能退回手写空 schema——否则「越权在类型层不可能」就只剩文档了。
+    // 真窗口验 pi 序列化那层仍留人工（M6.5 [human]）。
+    const pi = fakePi();
+    wire("dev", pi as never);
+    const def = pi.tools.find((t) => t.name === "send_task")?.def as Record<string, unknown>;
+    expect(def).toBeDefined();
+    expect(def.parameters).toEqual(sendTaskSchema("dev"));
+    // dev 的 type 枚举只有 review_request，绝无 arch 的 type
+    const params = def.parameters as { properties?: { type?: { enum?: string[] } } };
+    const typeEnum = params.properties?.type?.enum;
+    if (typeEnum) {
+      expect(typeEnum).toContain("review_request");
+      expect(typeEnum).not.toContain("task_assignment");
+      expect(typeEnum).not.toContain("verification");
+      expect(typeEnum).not.toContain("report");
     }
   });
 

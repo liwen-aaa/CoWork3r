@@ -17,7 +17,7 @@
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { Role } from "../protocol/message.ts";
-import { build, checkRoute } from "../protocol/index.ts";
+import { build, checkRoute, sendTaskDescription, sendTaskSchema } from "../protocol/index.ts";
 import { inspectConfig } from "../config/index.ts";
 import { parsePlan, milestone } from "../plan/index.ts";
 import { deliver, readState } from "../channel/index.ts";
@@ -55,8 +55,10 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
   pi.registerTool({
     name: "send_task",
     label: "投递任务",
-    description: `投一条 ${role} 能发的消息。type 必须是 ROUTES 里 from=${role} 的那些。`,
-    parameters: {} as never,
+    // 工具面按角色生成（P2 已测内容）：dev 的 schema 里根本没有 arch 的 type——
+    // 「越权在类型层不可能」的机制落点。description 同理（省 token + 隔离）。
+    description: sendTaskDescription(role),
+    parameters: sendTaskSchema(role),
     execute: async (_id, input, _s, _u, ctx) => {
       const r = deliverMsg(ctx.cwd, input as Record<string, unknown>);
       if (!r.ok) throw new Error(r.reason);
