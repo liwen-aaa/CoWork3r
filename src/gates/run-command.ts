@@ -10,7 +10,10 @@
  * 然后超时这条路就再没人测过。
  *
  * **输出只留尾部。** 失败信息几乎总在末尾（栈、失败列表、退出提示）。头部是安装
- * 与编译噪声。塞一万行进 reason 等于没有 reason。
+ * 与编译噪声。塞一万行进 reason 等于没有 reason。空输出则不拼（`withTail`）——
+ * 超时的进程通常什么都没打印，拼上去就是个尾随空行。
+ *
+ * **归类比措辞更先一步。** 命令找不到不是「测试失败」（见 `looksLikeMissingCommand`）。
  *
  * **异常不吞。** 老仓库自己的防偷懒 gate 因为 `catch {}` 静默失效过，而且是人审查
  * 时发现的，不是 gate 自己报的。D-32 说环境即边界：命令跑不起来是**报告**，
@@ -62,6 +65,34 @@ function tail(text: string): string {
   return t.length <= TAIL ? t : `…（前略）\n${t.slice(-TAIL)}`;
 }
 
+/** 拼在 reason 尾部的命令输出。空输出不拼——否则留下一个尾随空行（超时常常无输出） */
+function withTail(head: string, out: string): string {
+  const t = tail(out);
+  return t === "" ? head : `${head}\n${t}`;
+}
+
+/**
+ * shell 自己报的「找不到这个命令」。
+ *
+ * 为何靠输出而不靠 `r.error`：Windows 上 `shell: true` 遇到找不到的命令，
+ * 是 **cmd.exe 自己**以退出码 1 退出，`spawnSync` 层面没有任何错误——
+ * 于是它与「测试真的跑了且失败」在退出码上完全同形，只能从输出区分。
+ *
+ * 四条模式覆盖 cmd.exe（中/英）与 POSIX shell。匹配不上就退回「测试失败」的
+ * 原说法：宁可归类不够细，不可把真失败误报成环境问题（后者会让人去查 PATH
+ * 而不看测试）。语言环境千差万别，所以这是个启发式判据，不是完备清单。
+ */
+const NOT_FOUND = [
+  /不是内部或外部命令/,
+  /is not recognized as an internal or external command/i,
+  /command not found/i,
+  /:\s*not found\s*$/im,
+];
+
+function looksLikeMissingCommand(out: string): boolean {
+  return NOT_FOUND.some((re) => re.test(out));
+}
+
 export function G_command(ctx: {
   root: string;
   command: string;
@@ -87,21 +118,33 @@ export function G_command(ctx: {
   if (r.error && (r.error as NodeJS.ErrnoException).code === "ETIMEDOUT") {
     return block(
       NAME,
-      `${label}超时（${ctx.timeoutMs}ms 未结束）：${ctx.command}\n` +
-        `要么它真的慢（调大 wf.config.json 的 testTimeoutMs），要么它卡住了\n${tail(out)}`,
+      withTail(
+        `${label}超时（${ctx.timeoutMs}ms 未结束）：${ctx.command}\n` +
+          `要么它真的慢（调大 wf.config.json 的 testTimeoutMs），要么它卡住了`,
+        out,
+      ),
     );
   }
 
   // 其它 spawn 层错误（shell 起不来这类）。D-32：报告，不重试
   if (r.error) {
-    return block(NAME, `${label}没跑起来：${ctx.command}\n${String(r.error)}\n${tail(out)}`);
+    return block(NAME, withTail(`${label}没跑起来：${ctx.command}\n${String(r.error)}`, out));
   }
 
   if (r.status !== 0) {
-    return block(
-      NAME,
-      `${label}失败（退出码 ${r.status}）：${ctx.command}\n${tail(out)}`,
-    );
+    // 先分「没跑起来」还是「跑了但没过」——D-32 把环境错误归为边界，而人拿到
+    // 这两句话后的下一步完全不同：一个去装东西，一个去看测试。
+    if (looksLikeMissingCommand(out)) {
+      return block(
+        NAME,
+        withTail(
+          `${label}跑不起来：找不到命令 ${ctx.command}\n` +
+            `先装上它或修 PATH，再试（或改 wf.config.json 里的命令）`,
+          out,
+        ),
+      );
+    }
+    return block(NAME, withTail(`${label}失败（退出码 ${r.status}）：${ctx.command}`, out));
   }
 
   if (ctx.passPattern !== undefined && ctx.passPattern !== "") {
@@ -110,7 +153,10 @@ export function G_command(ctx: {
     if (!new RegExp(ctx.passPattern).test(out)) {
       return block(
         NAME,
-        `${label}退出码是 0，但输出里找不到通过标记 /${ctx.passPattern}/：${ctx.command}\n${tail(out)}`,
+        withTail(
+          `${label}退出码是 0，但输出里找不到通过标记 /${ctx.passPattern}/：${ctx.command}`,
+          out,
+        ),
       );
     }
   }

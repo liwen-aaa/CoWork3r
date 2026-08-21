@@ -107,7 +107,6 @@ x.ts 自上次投递以来没有变化（1 个文件的内容都没动）。产�
 ```
 测试超时（300ms 未结束）：node -e "setTimeout(()=>{},9000)"
 要么它真的慢（调大 wf.config.json 的 testTimeoutMs），要么它卡住了
-
 ```
 
 **15. 退出码 0 但输出里没有通过标记**
@@ -120,7 +119,8 @@ done
 **16. 命令根本不存在（环境问题，D-32）**
 
 ```
-测试失败（退出码 1）：wf-no-such-command
+测试跑不起来：找不到命令 wf-no-such-command
+先装上它或修 PATH，再试（或改 wf.config.json 里的命令）
 'wf-no-such-command' 不是内部或外部命令，也不是可运行的程序
 或批处理文件。
 ```

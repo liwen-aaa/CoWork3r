@@ -108,6 +108,73 @@ describe("T5 G-command 真跑命令", () => {
     }
   });
 
+  it("命令不存在 → 说的是「跑不起来」，不是「测试失败」（D-32 归类）", () => {
+    // 整理拦截文案时发现第 16 条说的是「测试失败（退出码 1）」。那句话不对：
+    // 测试没有失败，它根本没跑起来。dev 读到「测试失败」的第一反应是去看测试，
+    // 而实际该做的是装东西或修 PATH。
+    //
+    // 成因：Windows 上 shell:true 遇到找不到的命令，是 cmd.exe 自己以退出码 1
+    // 退出，spawnSync 的 r.error 是 undefined，所以走不到「没跑起来」那个分支。
+    //
+    // 与 GBK 那次（`0f6d6d8`）是同一条判据的两半：那次修「这句话能不能读」，
+    // 这次修「这句话说得对不对」。归错类的 reason 和乱码的 reason 一样误导人。
+    const p = makeProject("t5-nocmd-class");
+    try {
+      const r = G_command({
+        root: p.root,
+        command: "wf-no-such-command",
+        timeoutMs: 30_000,
+        label: "测试",
+      });
+      if (r.ok) throw new Error("应 block");
+      expect(r.reason).toMatch(/跑不起来|找不到/);
+      // 不该把环境问题说成测试失败
+      expect(r.reason).not.toContain("测试失败");
+      // 下一步该干什么：装它或修 PATH
+      expect(r.reason).toMatch(/PATH|装/);
+      // 命令名仍在（人得知道是哪个命令没找到）
+      expect(r.reason).toContain("wf-no-such-command");
+    } finally {
+      p.cleanup();
+    }
+  });
+
+  it("真的测试失败仍说「测试失败」（上一条不能误伤）", () => {
+    // 判据只在「输出匹配 shell 的找不到命令报错」时改措辞，匹配不上退回原说法。
+    // 这条钉住那个边界：退出码 1 且输出是正常的失败列表 → 仍然是「测试失败」
+    const p = makeProject("t5-real-fail");
+    try {
+      const r = G_command({
+        root: p.root,
+        command: `node -e "console.log('2 failed | 8 passed'); process.exit(1)"`,
+        timeoutMs: 30_000,
+        label: "测试",
+      });
+      if (r.ok) throw new Error("应 block");
+      expect(r.reason).toContain("测试失败");
+      expect(r.reason).not.toMatch(/跑不起来/);
+    } finally {
+      p.cleanup();
+    }
+  });
+
+  it("超时且无输出 → reason 不留空行（清单是实跑输出，噪声会掩盖真变化）", () => {
+    const p = makeProject("t5-timeout-tail");
+    try {
+      const r = G_command({
+        root: p.root,
+        command: `node -e "setTimeout(()=>{}, 10000)"`,
+        timeoutMs: 300,
+      });
+      if (r.ok) throw new Error("应 block");
+      // 超时的进程通常什么都没打印，tail(out) 返回空串，拼上去就是个尾随空行
+      expect(r.reason).toBe(r.reason.trimEnd());
+      expect(r.reason).not.toMatch(/\n\s*\n/);
+    } finally {
+      p.cleanup();
+    }
+  });
+
   it("shell 报错不是乱码（Windows 的 stderr 走系统代码页，不是 UTF-8）", () => {
     // 真实发生过：整理拦截文案时发现这条 reason 是
     // `'wf-no-such-command' \uFFFD\uFFFD\uFFFD\uFFFD\uFFFD在…`。cmd.exe 在中文系统上用 GBK
