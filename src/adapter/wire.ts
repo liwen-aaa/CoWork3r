@@ -109,9 +109,10 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
 
   pi.on("agent_end", (event, ctx) => {
     if (readState(ctx.cwd).milestone === "" || ctx.mode !== "tui") return; // 无里程碑或 print/rpc 无会话窗口
-    const ms = event.messages;
-    // 已投递或本轮由上一条提醒触发 → 不再提醒（followUp 自触发新回合 = 死循环，实测 2026-08-22）
-    const sent = ms.some((m) => (m.role === "assistant" && m.content.some((c) => c.type === "toolCall" && c.name === "send_task")) || (m.role === "user" && typeof m.content === "string" && m.content.startsWith("wf: 本轮结束")));
+    // 已投递或本轮由上一条提醒触发 → 不再提醒（followUp 自触发新回合 = 死循环，实测 2026-08-22）。
+    // user 文本兼容 string 与数组两形态：真实 followUp 的 content 是 [{type:"text",text}]
+    // （pi agent-session.js _queueFollowUp 构造），只认 string 会漏判 → 循环继续烧
+    const sent = event.messages.some((m) => (m.role === "assistant" && m.content.some((c) => c.type === "toolCall" && c.name === "send_task")) || (m.role === "user" && (typeof m.content === "string" ? m.content : m.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("")).startsWith("wf: 本轮结束")));
     if (sent) return;
     pi.sendUserMessage("wf: 本轮结束。若已完成请调 send_task 投出去。", { deliverAs: "followUp" });
   });
