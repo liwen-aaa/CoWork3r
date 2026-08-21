@@ -1,19 +1,16 @@
 /**
  * 三个角色共用的接线逻辑（差异全在数据里）。只做四件事：查表、挂钩子、转交、推进。
  * 业务判断一律看不到——判据在 05-gates，消息在 02-protocol，状态在 01-channel。
- *
  * ── pi 只以类型存在（D-07）─────────────────────────────────
- * 本文件对 pi 只有 `import type`。pi 与 ctx 一路作为参数传，**不存进模块作用域**
- * （A9 验的：同进程三次 wire，root 必须互不相同）。root 从 ctx.cwd 来，
- * 每次事件独立解析，不缓存。
+ * 本文件对 pi 只有 `import type`。pi 与 ctx 一路作参数传，**不存模块作用域**
+ * （A9 验的）。root 从 ctx.cwd 来，每次事件独立解析，不缓存。
  *
- * ── 角色激活在 extensions/*.ts ─────────────────────────────
- * 07-adapter.md：「读 WF_ROLE，调 wire()」。本文件不重复检查（A1/A2 测那边）。
- * 窗口只有「自己那份」的工具与钩子——`wire(role, pi)` 的 role 决定一切。
+ * ── 角色激活在 activate.ts ─────────────────────────────────
+ * 三份 extensions 各调 `activate(role, pi)`，匹配 WF_ROLE 才到这里。
  *
- * ── 四个钩子 + 一个工具 ────────────────────────────────────
- * session_start → 简报+就绪；before_agent_start → 注入规约；tool_call → 跑链；
- * agent_end → 未投递提醒。send_task 工具 = LLM 唯一投递口（build+deliver+flow）。
+ * ── 钩子与工具 ────────────────────────────────────────────
+ * session_start → 简报；before_agent_start → 注入规约；agent_start → 自检；
+ * tool_call → 跑链；agent_end → 未投递提醒。send_task = LLM 唯一投递口。
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { build, checkRoute, sendTaskDescription, sendTaskSchema, typesFrom } from "../protocol/index.ts";
@@ -28,6 +25,7 @@ import { bootBriefing } from "./status.ts";
 import { FLOW } from "./flow.ts";
 import { registerCommands } from "./commands.ts";
 import { checkInjectedSpec } from "./selfcheck.ts";
+import { guardNoMilestone } from "./guard.ts";
 import type { WindowRole } from "./activate.ts";
 
 export function wire(role: WindowRole, pi: ExtensionAPI): void {
@@ -37,7 +35,7 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     if (!cfg) return { ok: false, reason: "配置解析失败" };
     const parsed = parsePlan(cwd, cfg.plan);
     if (!parsed.ok) return { ok: false, reason: parsed.errors[0]!.message };
-    // 单 type 角色（dev 只有 review_request）：schema 省掉了 type，LLM 不会传——从 role 推导；多 type 角色 schema 有枚举必须由 LLM 选
+    // 单 type 角色（dev）：schema 省掉 type，从 role 推导；多 type 角色 schema 有枚举由 LLM 选
     const types = typesFrom(role);
     const type = (input.type as MsgType | undefined) ?? (types.length === 1 ? types[0] : undefined);
     if (!type) return { ok: false, reason: `缺少 type（${role} 可发：${types.join(" / ")}）` };
@@ -62,7 +60,6 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     },
   });
 
-  // 六个命令：/status /pass /fail /role /doctor /research（集中注册，见 commands.ts）
   registerCommands(role, pi);
 
   pi.on("session_start", (_event, ctx) => {
@@ -104,16 +101,19 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     if (!cfg) return;
     const parsed = parsePlan(ctx.cwd, cfg.plan);
     if (!parsed.ok) return;
-    const m = milestone(parsed.plan, readState(ctx.cwd).milestone);
-    const chain = CHAINS[`${role}:${String(event.input.type)}`];
+    const types = typesFrom(role); // 单 type 角色省掉 type 字段，从 role 推导（否则链查不到 = 拦截失效）
+    const type = String(event.input.type ?? (types.length === 1 ? types[0] : undefined));
+    const stateM = milestone(parsed.plan, readState(ctx.cwd).milestone);
+    const guard = guardNoMilestone(type, stateM, event.input.milestone, parsed.plan);
+    if (!guard.allow) return { block: true, reason: guard.reason };
+    const chain = CHAINS[`${role}:${type}`];
     if (!chain) return;
-    const r = runChain(chain, { root: ctx.cwd, cfg, milestone: m as never, input: event.input });
+    const r = runChain(chain, { root: ctx.cwd, cfg, milestone: guard.milestone as never, input: event.input });
     if (!r.ok) return { block: true, reason: r.reason };
   });
 
   pi.on("agent_end", (_event, ctx) => {
-    if (readState(ctx.cwd).milestone === "") return;
-    if (ctx.mode !== "tui") return; // print/rpc 无会话窗口，投递会冲突
+    if (readState(ctx.cwd).milestone === "" || ctx.mode !== "tui") return; // 无里程碑或 print/rpc 无会话窗口
     pi.sendUserMessage("wf: 本轮结束。若已完成请调 send_task 投出去。", { deliverAs: "followUp" });
   });
 }
