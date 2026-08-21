@@ -8,7 +8,8 @@
  * 直接按会发生设计：埋一行特征串，事后检查它还在不在。
  * 这是 D-02 用在自己身上——把「应该在」变成「不在就吵」。
  *
- * 本用例测纯函数 specPresent()。M6 负责把它挂到 agent_start 上并接 notify。
+ * 本用例测纯函数 specPresent()。接线（agent_start → checkInjectedSpec → 告警）已由
+ * A9b-selfcheck.test.ts 钉住，三面覆盖：正常不告警 / 整份替换告警含角色 / 角色区分。
  */
 import { describe, expect, it } from "vitest";
 

@@ -124,6 +124,29 @@
  * 记录的 src 1804 / tests 3845 与 40a0a42 实测（1913/4194）不符，本次用实测数字起算。
  * 结构性原因未变；阈值仍留 1.0，未动。
  *
+ * ── 2026-08-22 第七次审的结论（M6-004 修复轮，红线 2.21）─────────
+ * 构成 diff（对第六次审 2.22 = src 1917 / tests 4259，实测核对）：
+ *   src   1917 → 1941（+24：routes requires 加 artifact ×3 处、message.ts 加
+ *                      artifact 类型、wire.ts 拦截链单 type 推导 + guard 改造）
+ *   tests 4259 → 4287（+28：P2 一致性用例、_fixture 的 assertParamsMatchSchema、
+ *                      E1/A9 的 schema 校验封装调用、protocol _fixture artifact 样本）
+ *
+ * 逐份过新增测试，判据是「测真实行为还是测仪式」：
+ *   P2 一致性用例    真实行为（M6-004 的落点：gates 消费的 artifact/questions 必须
+ *                    在 schema 里——删掉 FIELDS / union 任一字段立刻红）
+ *   assertParamsMatchSchema + E1/A9 调用  真实行为（模拟 pi 的 JSON Schema 校验：
+ *                    additionalProperties/required。M6-003 实测 pi 就是拒
+ *                    additionalProperties——测试直调 execute 会绕过这层，schema 删
+ *                    字段照样绿。把校验搬回调用路径 = D-25 闭环，不是仪式）
+ *   protocol _fixture artifact 样本  真实行为（requires 加字段必须补样本，否则 D-25
+ *                    的 sampleFields 抛错——这是机制本身在叫）
+ *
+ * 仪式成分：没找到。这 28 行全部是 M6-004（schema↔gates 脱钩，真实故障形状）的回归
+ * 防线；其中 assertParamsMatchSchema 把 E1/A9 从「绕过 schema」改回「过校验」——
+ * 它逮到一个真 bug（wire 拦截链对单 type 角色 type 解析缺失 → G_artifact 对 dev
+ * 静默失效，E1 改真实路径后立刻红）。
+ * 结构性原因未变；阈值仍留 1.0，未动。
+ *
  * ── 2026-08-21 第三次审的结论（M5 收尾，红线 2.09）─────────
  * 构成 diff（对上次审 1.95 = src 1115 / tests 2171）：
  *   src   1115 → 1501（+386，全是 src/gates 七个文件）
