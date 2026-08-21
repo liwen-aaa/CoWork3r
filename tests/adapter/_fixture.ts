@@ -116,11 +116,24 @@ export function fakePi() {
       sent.push({ text, opts });
     },
     /** 同步触发。handler 返回值原样返回（拦截链的 {block, reason} 就走这里） */
-    emit(event: string, payload: unknown, ctx: { cwd: string; mode?: "tui" | "print" | "rpc" | "json" }): unknown {
+    emit(
+      event: string,
+      payload: unknown,
+      ctx: {
+        cwd: string;
+        mode?: "tui" | "print" | "rpc" | "json";
+        /** agent_start 自检读它（wire 的注入自检，P1 的机制落点）——默认返回空串：
+         *  检查方对「拿不到 prompt」的处置是静默，测试不必每个事件都传 */
+        getSystemPrompt?: () => string;
+      },
+    ): unknown {
       const hs = handlers.get(event);
       if (!hs) return undefined;
+      // agent_start 的注入自检会调 ctx.getSystemPrompt()——不传就补一个
+      // 返回空串的默认（空串里没有特征串，检查方对「拿不到 prompt」是静默）
+      const safeCtx = { getSystemPrompt: () => "", ...ctx };
       let result: unknown;
-      for (const h of hs) result = h(payload, ctx);
+      for (const h of hs) result = h(payload, safeCtx);
       return result;
     },
     /** 触发某条消息的唤醒路径：等价于 watchInbox 把消息交给 onMessage 后再清空 */
