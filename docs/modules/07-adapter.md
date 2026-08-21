@@ -240,5 +240,5 @@ tests/e2e/
 
 ---
 
-**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ 03-config（已收缩进 `src/config/`） ｜ 04-plan（已收缩进 `src/plan/`） ｜ [05-gates](05-gates.md) ｜ 06-roles（已收缩进 `src/roles/`） ｜ 07-adapter（本文）
+**已写模块**：01-channel（已收缩进 `src/channel/`） ｜ 02-protocol（已收缩进 `src/protocol/`） ｜ 03-config（已收缩进 `src/config/`） ｜ 04-plan（已收缩进 `src/plan/`） ｜ 05-gates（已收缩进 `src/gates/`） ｜ 06-roles（已收缩进 `src/roles/`） ｜ 07-adapter（本文）
 **下一个模块**：08-dist（pi package、launch 脚本、澄清入口、research 命令、单实例防重）
