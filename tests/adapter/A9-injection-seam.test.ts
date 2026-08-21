@@ -43,7 +43,7 @@ describe("A9 注入缝", () => {
 
       // 触发 A 的 agent_end：只有 A 的 sent 被追加，B 不受影响
       const beforeB = piB.sent.length;
-      piA.emit("agent_end", {}, { cwd: p.root, mode: "tui" });
+      piA.emit("agent_end", { messages: [] }, { cwd: p.root, mode: "tui" });
       expect(piA.sent.length).toBeGreaterThan(beforeB);
       expect(piB.sent.length).toBe(beforeB);
     } finally {
@@ -68,7 +68,7 @@ describe("A9 注入缝", () => {
 
       // 触发 B 的事件，A 的 sent 不动
       const beforeA = piA.sent.length;
-      piB.emit("agent_end", {}, { cwd: p.root, mode: "tui" });
+      piB.emit("agent_end", { messages: [] }, { cwd: p.root, mode: "tui" });
       expect(piB.sent.length).toBeGreaterThan(0);
       expect(piA.sent.length).toBe(beforeA);
     } finally {
