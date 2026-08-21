@@ -26,6 +26,18 @@ function pendingOf(which: "own" = "own") {
   }
 }
 
+/** 同上，外加原文行——用于「文件里写了的东西必须被解出来」这类交叉核对 */
+function pendingWithSource() {
+  const f = derive("own", (lines) => lines); // 恒等 derive：不改一个字，只为拿到行
+  try {
+    const r = parsePlan(f.root, f.rel);
+    if (!r.ok) throw new Error(`前提失败：${JSON.stringify(r.errors)}`);
+    return { pending: r.plan.pending, lines: f.lines };
+  } finally {
+    f.cleanup();
+  }
+}
+
 describe("L7 未决表与 frontier", () => {
   it("本项目 plan.md 的未决表解出 id，且 id 从文本读而非按位置分配", () => {
     const p = pendingOf();
@@ -52,16 +64,65 @@ describe("L7 未决表与 frontier", () => {
     if (ids.includes("P5")) expect(ids).not.toContain("P4");
   });
 
-  it("三段式解出 kind 与归属", () => {
-    const p = pendingOf();
-    // 「—— [human] 归我 ——」这段
-    const human = p.filter((x) => x.kind === "human");
+  it("三段式解出 kind；原文写了「归X」就必须解出 owner", () => {
+    const { pending, lines } = pendingWithSource();
+
+    const human = pending.filter((x) => x.kind === "human");
     expect(human.length).toBeGreaterThan(0);
-    for (const h of human) expect(h.owner).toBeTruthy();
+
+    // 判据取自**原文那一行**，不取自解析结果：只断言「有 owner 的都非空」
+    // 等于让实现自己定义通过条件——owner 全丢也能绿。
+    // 这条第一版就是这么被写松的，而松掉的正好是当时唯一的真 bug：
+    // P8 的正文里含一个 `——`，按位置切段时标记段被挤走，owner 静默消失。
+    for (const x of pending) {
+      const src = lines[x.line - 1] ?? "";
+      const wrote = /归(\S+)/.exec(src);
+      if (wrote) expect(x.owner).toBe(wrote[1]);
+      else expect(x.owner).toBeUndefined();
+    }
+    expect(human.filter((x) => x.owner !== undefined).length).toBe(human.length);
+
     // 「—— [auto] 待查 ——」这段
-    const auto = p.filter((x) => x.kind === "auto");
+    const auto = pending.filter((x) => x.kind === "auto");
     expect(auto.length).toBeGreaterThan(0);
     for (const a of auto) expect(a.status).toBe("open");
+  });
+
+  it("正文里含 `——` → 段位不错位（标记段按内容认，不按位置数）", () => {
+    const f = derive("own", (lines) => {
+      const at = lineOf(lines, /^- P1 /);
+      lines[at] = lines[at]!.replace("MARK 自检", "MARK 自检 —— 也就是那个特征串 ——");
+      return lines;
+    });
+    try {
+      const r = parsePlan(f.root, f.rel);
+      if (!r.ok) throw new Error(`不该报错：${JSON.stringify(r.errors)}`);
+      const p1 = r.plan.pending.find((x) => x.id === "P1")!;
+      // 三段式的段数不固定：正文自己可以带破折号。标记与前置靠内容定位
+      expect(p1.kind).toBe("auto");
+      expect(p1.status).toBe("open");
+      expect(p1.text).toContain("也就是那个特征串");
+    } finally {
+      f.cleanup();
+    }
+  });
+
+  it("整行没有 [auto]/[human] 标记 → 报错，不静默当成 human", () => {
+    const f = derive("own", (lines) => {
+      const at = lineOf(lines, /^- P3 /);
+      lines[at] = lines[at]!.replace("[human] 归我", "归我");
+      return lines;
+    });
+    try {
+      const r = parsePlan(f.root, f.rel);
+      // 与 L3 同一条判据：分类承载判据（谁去动它），默认值会让漏标看不见
+      expect(r.ok).toBe(false);
+      if (r.ok) return;
+      expect(r.errors.some((e) => e.line === lineOf(f.lines, /^- P3 /) + 1)).toBe(true);
+      expect(r.errors.some((e) => /\[auto\]|\[human\]/.test(e.message))).toBe(true);
+    } finally {
+      f.cleanup();
+    }
   });
 
   it("前置未清 → 该条进 blocked，不进 actionable", () => {
