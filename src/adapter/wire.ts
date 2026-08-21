@@ -16,7 +16,8 @@
  * agent_end → 未投递提醒。send_task 工具 = LLM 唯一投递口（build+deliver+flow）。
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { build, checkRoute, sendTaskDescription, sendTaskSchema } from "../protocol/index.ts";
+import { build, checkRoute, sendTaskDescription, sendTaskSchema, typesFrom } from "../protocol/index.ts";
+import type { MsgType } from "../protocol/message.ts";
 import { inspectConfig } from "../config/index.ts";
 import { parsePlan, milestone } from "../plan/index.ts";
 import { deliver, readState } from "../channel/index.ts";
@@ -36,7 +37,11 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     if (!cfg) return { ok: false, reason: "配置解析失败" };
     const parsed = parsePlan(cwd, cfg.plan);
     if (!parsed.ok) return { ok: false, reason: parsed.errors[0]!.message };
-    const msg = build(input.type as never, role, { ...input, from: role });
+    // 单 type 角色（dev 只有 review_request）：schema 省掉了 type，LLM 不会传——从 role 推导；多 type 角色 schema 有枚举必须由 LLM 选
+    const types = typesFrom(role);
+    const type = (input.type as MsgType | undefined) ?? (types.length === 1 ? types[0] : undefined);
+    if (!type) return { ok: false, reason: `缺少 type（${role} 可发：${types.join(" / ")}）` };
+    const msg = build(type, role, { ...input, from: role });
     const r = deliver(cwd, msg, checkRoute);
     if (!r.ok) return { ok: false, reason: r.reason };
     FLOW[msg.type]({ root: cwd, msg, milestone: milestone(parsed.plan, msg.milestone ?? "") });

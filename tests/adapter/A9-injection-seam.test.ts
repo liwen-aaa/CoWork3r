@@ -15,7 +15,7 @@ import { execSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 import { wire } from "../../src/adapter/index.ts";
-import { writeState } from "../../src/channel/index.ts";
+import { peek, writeState } from "../../src/channel/index.ts";
 import { sendTaskSchema } from "../../src/protocol/index.ts";
 import { fakePi, makeProject, realConfig, installPlan } from "./_fixture.ts";
 
@@ -93,6 +93,33 @@ describe("A9 注入缝", () => {
       expect(typeEnum).not.toContain("task_assignment");
       expect(typeEnum).not.toContain("verification");
       expect(typeEnum).not.toContain("report");
+    }
+  });
+
+  it("dev 单 type 时 execute 不传 type 也能投递（LLM 按 schema 调用）", async () => {
+    // dev 的 schema 只有一个 type（review_request）→ 省略 type 字段，LLM 不会传。
+    // execute 必须从 role 推导唯一 type——否则真窗口里 dev 永远投不出去
+    // （build 抛「未知 type \"undefined\"」）。E1 手写 type 绕过了 schema 校验
+    // 所以没逮到；这条模拟真实调用路径。
+    const p = makeProject("a9-dev-single-type");
+    try {
+      realConfig(p.root, { plan: installPlan(p.root) });
+      writeState(p.root, { milestone: "M1", round: 1, maxRounds: 5, consecutiveFails: 0 });
+      const pi = fakePi();
+      wire("dev", pi as never);
+      const def = pi.tools.find((t) => t.name === "send_task")?.def as
+        | { execute: (...args: unknown[]) => Promise<unknown> | unknown }
+        | undefined;
+      if (!def?.execute) throw new Error("send_task 工具未注册");
+      // 按 schema 调用：不传 type（schema 里也没有 type 字段）
+      const r = def.execute("a9", { milestone: "M1", body: "做完了" }, undefined, undefined, {
+        cwd: p.root,
+      });
+      if (r && typeof r === "object" && "then" in r) await r;
+      const got = peek(p.root, "tester");
+      expect(got?.type).toBe("review_request");
+    } finally {
+      p.cleanup();
     }
   });
 
