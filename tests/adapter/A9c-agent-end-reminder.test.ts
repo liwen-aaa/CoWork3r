@@ -8,6 +8,11 @@
  * 提醒触发的回合也不重复提醒——LLM 看过一次提醒就够，第二轮回合带提醒
  * 文案进来 → 不再发 → 循环必停。
  *
+ * 真实形态修正（2026-08-22 真进程复测）：followUp 投递的 user 消息 content 是
+ * **数组** [{type:"text",text}]（pi _queueFollowUp 构造），不是 string。第一版
+ * 检查只认 string → 数组漏判 → 死循环继续烧（用例③的 string mock 是错误假设，
+ * 已改为真实数组形态，D-25）。
+ *
  * 为什么是真实行为不是仪式（D-41 构成 diff）：用例 ② 钉「投完不追着问」、
  * ③ 钉「提醒不重复」（循环的停止条件，删掉它循环必复现）、④ 钉「无工作
  * 对象不提醒」、⑤ 钉「无会话窗口不提醒」。删任一 guard 对应用例红。
@@ -71,7 +76,14 @@ describe("A9c agent_end 未投递提醒", () => {
       "agent_end",
       {
         messages: [
-          { role: "user", content: "wf: 本轮结束。若已完成请调 send_task 投出去。", timestamp: 1 },
+          // 真实 followUp 的 content 是数组形态 [{type:"text",text}]（pi agent-session.js
+          // _queueFollowUp 构造，真进程实测确认）——mock 必须同形状，否则测试绿、真实
+          // 链路断（D-25：与 M6-003/E1 绕 schema 同形状的坑）
+          {
+            role: "user",
+            content: [{ type: "text", text: "wf: 本轮结束。若已完成请调 send_task 投出去。" }],
+            timestamp: 1,
+          },
         ],
       },
       { cwd: root, mode: "tui" },
