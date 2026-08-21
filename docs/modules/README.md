@@ -34,7 +34,7 @@
 | 05 | gates | 🧹 | 纯函数判定：断言可测、产出结构、快照、真跑命令、人的问题。**文档已拆**：职责 / 为什么独立一层 / 链是数据与顺序 / 不负责什么 → [`src/gates/index.ts`](../../src/gates/index.ts) 文件头，五道 gate 的判据与取舍 → `plan-ready.ts` / `artifact.ts` / `source-changed.ts` / `run-command.ts` / `human-questions.ts` 文件头，G1–G10 设计点 → [`tests/gates/`](../../tests/gates/) 用例名与注释，`buildCmd` 随 S 档位砍掉的取舍 → [`src/config/fields.ts`](../../src/config/fields.ts) |
 | 06 | roles | 🧹 | 三份静态规约 + system prompt 注入 + 注入自检。**文档已拆**：为什么不用 pi skill / 三类内容切分 / 取舍 → [`src/roles/index.ts`](../../src/roles/index.ts) 文件头，加载与拼接与特征串 → `inject.ts`，规约本体 → `arch.md` `dev.md` `tester.md`，R1–R6 设计点 → [`tests/roles/`](../../tests/roles/) 用例名与注释 |
 | 07 | adapter | 🧹 | 三个薄扩展：接线、确定性状态流转、/status。**文档已拆**：职责 / 为什么必须薄 / 不负责什么 → [`src/adapter/index.ts`](../../src/adapter/index.ts) 文件头，四个钩子与 send_task 工具 / root 从 ctx.cwd 来 → [`src/adapter/wire.ts`](../../src/adapter/wire.ts) 文件头，状态流转表 → `flow.ts`，/status 四行 → `status.ts`，A1–A9 + E1 设计点 → [`tests/adapter/`](../../tests/adapter/) 与 [`tests/e2e/`](../../tests/e2e/) 用例名与注释 |
-| 08 | [dist](08-dist.md) | ✅ | pi package、launch 脚本、澄清入口、research 命令 |
+| 08 | dist | 🧹 | 分发与接入：pi package、launch 脚本、澄清入口、research 命令。**文档已拆**：包定义与 typebox peerDep 取舍 → [`package.json`](../../package.json) + D1/D2，launch 脚本（老仓库照抄 + 三条废弃形态改掉）→ [`launch/`](../../launch/) + D3/D4，澄清入口 → [`skills/plan/SKILL.md`](../../skills/plan/SKILL.md) + D5，research 状态机 → [`src/dist/research.ts`](../../src/dist/research.ts) + D7，接入路径验收 → D6，命令注册 → [`src/adapter/commands.ts`](../../src/adapter/commands.ts) |
 
 ## 下一步
 
