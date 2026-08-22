@@ -2,15 +2,11 @@
  * 三个角色共用的接线逻辑（差异全在数据里）。只做四件事：查表、挂钩子、转交、推进。
  * 业务判断一律看不到——判据在 05-gates，消息在 02-protocol，状态在 01-channel。
  * ── pi 只以类型存在（D-07）─────────────────────────────────
- * 本文件对 pi 只有 `import type`。pi 与 ctx 一路作参数传，**不存模块作用域**
- * （A9 验的）。root 从 ctx.cwd 来，每次事件独立解析，不缓存。
- *
- * ── 角色激活在 activate.ts ─────────────────────────────────
- * 三份 extensions 各调 `activate(role, pi)`，匹配 WF_ROLE 才到这里。
- *
+ * 本文件对 pi 只有 `import type`，pi 与 ctx 一路作参数传，不存模块作用域（A9 验的）；
+ * root 从 ctx.cwd 来，每次事件独立解析，不缓存。角色激活判定在 activate.ts。
  * ── 钩子与工具 ────────────────────────────────────────────
- * session_start → 简报；before/agent_start → 注入与自检；tool_call → 跑链；
- * agent_end → 未投递提醒（防 followUp 自循环，见 A9c）。send_task = 唯一投递口。
+ * session_start → 简报 + 唤醒接线（wireWake）；before/agent_start → 注入与自检；
+ * tool_call → 跑链；agent_end → 未投递提醒（A9c）。send_task = 唯一投递口。
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { build, checkRoute, resolveType, sendTaskDescription, sendTaskSchema, typesFrom } from "../protocol/index.ts";
@@ -26,8 +22,10 @@ import { registerCommands } from "./commands.ts";
 import { checkInjectedSpec } from "./selfcheck.ts";
 import { guardNoMilestone } from "./guard.ts";
 import type { WindowRole } from "./activate.ts";
+import { wireWake, type WakeOptions } from "./wake.ts";
 
-export function wire(role: WindowRole, pi: ExtensionAPI): void {
+export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {}): () => void {
+  const wake = wireWake(role, pi, opts); // 唤醒接线（M6-010）：句柄 keyed by root，见 wake.ts
   /** 投递 + 推进状态。from 由 role 决定（越权在类型层不可能）；to 由 ROUTES 决定 */
   const deliverMsg = (cwd: string, input: Record<string, unknown>): { ok: true } | { ok: false; reason: string } => {
     const { cfg } = inspectConfig(cwd);
@@ -46,8 +44,7 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
   pi.registerTool({
     name: "send_task",
     label: "投递任务",
-    // 工具面按角色生成（P2 已测内容）：dev 的 schema 里根本没有 arch 的 type——
-    // 「越权在类型层不可能」的机制落点。description 同理（省 token + 隔离）。
+    // 工具面按角色生成（P2 已测）：dev 的 schema 里没有 arch 的 type——越权在类型层不可能
     description: sendTaskDescription(role),
     parameters: sendTaskSchema(role),
     execute: async (_id, input, _s, _u, ctx) => {
@@ -74,10 +71,10 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
       milestone: m,
       diagnostics,
     });
-    // --print / rpc 无会话窗口：sendUserMessage 会与处理中的消息冲突，TUI 才发就绪
-    // （身份注入走 before_agent_start 改 systemPrompt，不依赖这里）
+    // TUI 才发就绪 + 启动唤醒（print/rpc 无会话窗口：sendUserMessage 会与处理中的消息冲突）
     if (ctx.mode === "tui") {
       pi.sendUserMessage(`wf: ${role} 就绪\n${brief}`, { deliverAs: "followUp" });
+      wake.start(ctx.cwd);
     }
   });
 
@@ -116,4 +113,6 @@ export function wire(role: WindowRole, pi: ExtensionAPI): void {
     if (sent) return;
     pi.sendUserMessage("wf: 本轮结束。若已完成请调 send_task 投出去。", { deliverAs: "followUp" });
   });
+
+  return wake.stopAll; // 关掉全部唤醒句柄（activate 不消费；测试/热重载用）
 }
