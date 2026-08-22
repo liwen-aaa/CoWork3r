@@ -118,7 +118,7 @@
 
 - M2, M3, M4
 
-## 里程碑 M6 三窗口跑通
+## 里程碑 M6 三窗口跑通 ✅
 
 ### 断言
 
@@ -140,9 +140,19 @@
 ### 风险与未决
 
 - **mock-pi 的保真度**：e2e 用同进程 mock 驱动三个适配器，它验的是接线正确，不验 pi 真实行为（事件时序、`sendUserMessage` 语义、系统提示注入链）。这是 `[human]` 那条存在的理由，不能用 e2e 顶掉。
+- **空 state 的首个 task_assignment 必崩（2026-08-22 真进程实测，通道级）**：state 里无里程碑时（本仓库 `.pi/messages/state.json` 不存在）arch 发 task_assignment，`guardNoMilestone` 放行后 G_plan 收到 `milestone: null` → `checkMilestone(null)` 读 `m.passed` 崩（`src/plan/parse.ts:317`，实测错误串 `Cannot read properties of null (reading 'passed')`）。根因：`wire.ts` 的 tool_call 只从 state 取里程碑，task_assignment 的里程碑在 `event.input.milestone` 里，没被解析出来传给 G_plan——`guard.ts` 文件头记过同一形状（「M6.6 机器部分执行时」抓到过），但修复只改了 block 语义、没改 null 传递，不完整。测试没抓到：E1 第 68 行预写 `state.milestone="M1"`，绕过了空 state 路径。影响：空项目真开窗口首次分发必崩，M6.6 无法跑。修复方向（派 dev）：tool_call 对 task_assignment 用 `event.input.milestone` 解析里程碑再进链；补一条空 state 分发不崩的用例（或让 E1 首步不预写 state）。
+  **arch 判定（2026-08-22 会话）**：实现级故障，不是架构假设错——task_assignment 的 milestone 本就是协议必填字段、就在消息里，错在 wire 层只从 state 取里程碑、没读消息字段。修复已实现（工作区，随 M6 下个提交）：`guardNoMilestone(type, stateM, inputMilestone, plan)` 对 task_assignment 从 `event.input.milestone` 解析里程碑再进链，其余 type 空 state 下 block 并说明；回归防线 = E1 首步不预写 state（改后全绿）。边界定案：`arch:report` 保持 block——判定可接受（空 state 下没有可报告的工作对象，就绪状态由启动简报覆盖；将来需要时 guard 加一行豁免即可）。
 - **mock-pi 的 API 清单不预先定**：它等于「wire.ts 碰了 pi 对象上的哪几个方法」，M1–M5 之前写出来是猜。事后补不回来的只有注入缝，那一条已由 A9 钉住（D-07）。
 - **注入自检（P1）已接通；断言表是否点名 A9b —— 已定**：P1 查证时点 `specPresent` 无调用点是历史事实（wf/notes/p1-mark.md）；修复轮已闭环——`src/adapter/selfcheck.ts` 挂 `agent_start` + `ctx.getSystemPrompt()` 查特征串、不在则告警，A9b 三用例钉住行为（正常不告警 / 整份替换告警且含角色 / 角色区分），真进程复测过。**arch 判定：不补新断言**——A9b 在 M6.1 的 `npm test -- tests/adapter` 目录范围内，M6.1 已覆盖；再补一条 grep 断言属 D-40 ②问里的「保护自证」（用户能力已由 A9b 保护：规约被替换时窗口正常、工具在、仅模型不知道自己是谁——这个静默症状现在会被检出）。残余小事：R5 头注释「M6 负责把它挂到 agent_start 上并接 notify」已兑现，建议改为指向 A9b（一句话，随下次提交）。
 - **schema↔gates 一致性测试缺口（M6-003 修复方向未全落）**：tester 的 M6-003 修复方向含「补 schema 生成属性集合 == gates 消费字段 的校验测试」，修复轮未加（`grep artifact tests/` 仅 E1 与 gates 侧命中）。现状：`FIELDS` 与 union 基础集已含 artifact（可选字段），真进程复测投递成功——**通道已通，不阻塞修复轮判定**。但若将来从 `FIELDS`/union 删掉 artifact，无自动化测试会红（E1 直调 execute 绕过 schema 校验、fakePi 不校验参数）。建议补一条测试：用真实 `sendTaskSchema(role)` 断言 dev/tester 的 schema 属性含 artifact，顺带让 E1 走 schema 校验路径（D-25）。归人定：补进修复轮（派 dev）或接受为已知风险。
+- **agent_end 提醒的 followUp 自循环（2026-08-22 真进程实测，通道级）**：state 有里程碑后，agent_end 每轮发 followUp 提醒「本轮结束请调 send_task 投出去」，而 pi 的 `sendUserMessage` **总是触发新回合** → 提醒 → 新回合 → 再提醒 → 三窗口全卡死（本仓库 arch 投 task_assignment 后实测）。根因：提醒钩子没防 followUp 自触发。修复（工作区，随 M6 下个提交）：agent_end 检查本轮消息流——已调过 send_task（含被 block 的尝试）或本轮就是上一条提醒触发的回合（user 消息带「wf: 本轮结束」文案）→ 不提醒；LLM 看过一次提醒就够，第二轮回合不再发，循环必停。回归防线：A9c 五用例（提醒正面行为 / 投完不追着问 / 提醒不重复=循环停止条件 / 无工作对象不提醒 / 无会话窗口不提醒）。
+  **arch 判定（2026-08-22 会话）**：实现级故障，不是架构假设错——三窗口架构与「未投递提醒」本身都对，错在提醒的触发条件没考虑 `sendUserMessage` 的副作用（总触发新回合）。修复已实现（工作区未提交，全绿 41 passed 含 A9c，D-41 第九次审已落盘）。**流程备注**：A9c 是 tester R4 判定（02:33，36 passed）之后引入的未提交改动，不在 R3 问题清单里——它是 R4 后真进程复测逮到的第四个通道级问题；随修复轮提交并纳入复验范围。
+  **真进程实证（2026-08-22 本轮会话）：A9c 修复失效，死循环仍在烧。** 修复后收到第二条「本轮结束」提醒（预告过的观测点命中）。根因：`agent_end` 的 `event.messages` 里 followUp 投递的 user 消息 content 是**数组形态** `[{type:"text", text:"…"}]`——pi 源码 `dist/core/agent-session.js` 的 `_queueFollowUp` 构造 `content = [{type:"text", text}]`（约 1048 行）——而 A9c 检查 `typeof m.content === "string" && m.content.startsWith("wf: 本轮结束")` 只认 string → 数组漏判 → sent=false → 每轮 agent_end 必再提醒。**A9c 用例③的 mock 用 string content 是错误假设**（D-25：mock 与真实结构脱钩，测试绿、真实链路断——与 M6-003/E1 绕 schema 同形状）。修复方向（已派 dev）：wire.ts 的 user 文本提取兼容 string 与数组两形态；A9c 用例③改真实数组形态；修后真进程复测循环停。
+- **唤醒链路缺失（M6-010 [serious]；2026-08-22 M6.6 真跑实测，通道级）**：`watchInbox`（01-channel 的 fs.watch + 10s 轮询兜底）在 `src/adapter/` **零调用**——`grep -rn "watchInbox" src/` 仅命中注释（channel 定义 + status.ts:11）。`git log -S "watchInbox(ctx.cwd" -- src/` 为空——**从未接线过**，不是回归删除。`src/adapter/status.ts:11` 注释：「wire 的 session_start / **watchInbox** 共用同一份」——设计上 wire 应启动 watchInbox，实现没做（D-02 的精确形状：写了但没接线，且无机制抓）。后果：消息落盘 → 无任何通知 → pi agent 只在收到 user 消息时跑 → 窗口永远等不到消息，全靠人踢。**M6.6 自动成环在机制上不可能成立**，判据 1（无静默故障）不成立。为什么测试没抓到：E1 / mock-pi 全部直调驱动（emit 事件、直调 execute），唤醒是「消息落盘 → 窗口收到通知」这条真实路径，mock 完全绕过——这正是 M6.6 [human] 断言存在的理由。
+  **arch 判定（2026-08-22 会话）**：实现级故障，不是架构假设错——watchInbox 在 channel 层存在且有测试（C1/C2/C3/C6），错在 adapter 层从未接线；断言二本身是好的（它抓到了 mock 抓不到的唤醒路径缺失），**断言不需要改**。修复方向（已定，派 dev）：① wire() 在 session_start 接线 `watchInbox(ctx.cwd, role, (msg) => pi.sendUserMessage(...), { onWake: 打印 poll/event/catchup 触发源 })`——onWake 日志是 C1 人工断言的观测点；② 句柄跨事件持有：`Map<root, Stop>`（keyed by root，满足 D-07 的 root 隔离判据）或挂 pi 的 session 生命周期（待查 SessionStartEvent ctx 挂载点）；③ 补测试：fakePi 触发 session_start → 投真实消息进收件箱 → 断言 sendUserMessage 被调 + 触发源日志；E1 增补「消息到达 → 窗口被唤醒」（D-25 真实落盘路径）；④ 修完重跑 M6.6，**全程不注入**观察——判据 1/3 的本意。
+- **FAIL 演练依赖人注入剧本（M6-011 [medium]；2026-08-22 M6.6 真跑实测）**：M6.md 步骤 5 要求 dev 第一版「故意不含 ok」以触发 FAIL，但 arch→dev 的 task_assignment 是自动流转，arch 不会自发写「请故意犯错」。实测 dev 两次都忠于 plan 断言写了含 ok 的内容——FAIL 演练只能靠人向 arch 窗口注入剧本才触发，不是可自动执行的验证项。这不是产品缺陷，是演练方法的限制。
+  **arch 判定（2026-08-22 会话）**：实现与断言均无误，问题在演练设计——「让 dev 故意写错」与「dev 忠于断言」天然冲突。建议改法（归人定，三选项）：① 改为真实缺陷触发 FAIL（不预演：把 M6.6 实测中真实出现的缺陷作为验收输入）；② 移除 M6.md 步骤 5——fix_request 通道已由 R5 在本仓库真窗口验过，M6.6 只验主链路自动成环（推荐：最省且通道验证需求已满足）；③ 接受「FAIL 演练不纳入 M6.6 验收范围」为已知边界。
+- **M6 收尾定案（2026-08-23，验收通过）**：R3 escalation（M6-001/M6-003）追溯确认闭环——M6-001 已由 selfcheck.ts 挂 agent_start + A9b 钉住（P1 定案「能发现」），M6-003 已由修复一 + M6-004（routes requires 加 artifact + P2 一致性测试）钉住；M6-010 唤醒链路已闭环（6b0dc82 红 + 974ed40 绿，A9d/E1 回归防线，M6.6 第二轮重跑 PASS）；schema↔gates 一致性缺口已闭环（M6-004 P2 用例：删 FIELDS/union 字段即红）；M6-011 按选项②形态执行（重跑无 FAIL 演练、纯主链路自动成环，判据 1–4 全过），书面选项确认归人（to-human.json 已记录）。
 
 ## 未决
 

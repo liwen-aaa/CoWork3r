@@ -74,4 +74,8 @@ docs/plan.md 风险节：**M6 断言表没有覆盖「注入自检已接通」**
 
 ## 判定
 
-（由人填写，照录签字原文）
+R3 FAIL（M6-006/M6-007，tester 实测）→ R5 FAIL（M6-009 gate 环境 grep 缺失 / M6-008 A9c 未提交）
+→ 修复闭环（A9c 数组形态 66943f3、grep node 原生化 01dafd2）→ R6 PASS（341 绿，无 grep 环境复测）
+→ M6-010 补充修复轮（唤醒链路，6b0dc82 红 + 974ed40 绿，见 M6.6-fail.md）→ **R7 验收 PASS**：tester 独立复核重跑 44 passed / 13 files + 全量 344 / 68 同绿（test-report-M6.md）；M6.6 第二轮重跑自动成环 PASS（M6.md 断言二判据 1–4）
+
+签字：liwen / 2026-08-23

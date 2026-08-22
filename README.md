@@ -6,13 +6,13 @@
 两条支柱：**生产者不能宣布自己完成**（所以 dev 与 tester 是两个上下文）、
 **纪律不进拦截链就不会被遵守**（所以 gate 是代码，不是提示词）。
 
-## 状态：在建，不可用
+## 状态：六里程碑全部验收
 
 进度看 [`docs/progress.md`](docs/progress.md)（生成物，`npm run docs:progress`）。
 本文不再手写里程碑表——它曾同时存在于三处并全部过时，那是 D-04 + D-02 的合并症状。
 
-八份架构文档已完整（`docs/modules/`），代码从 M1 开始逐层落地。
-M6 之前无法接入任何项目。
+八份架构文档已完整（`docs/modules/`）且代码全部落地，M1–M6 已验收（2026-08-23）。
+接入与分发：`pi install -l <本仓库绝对路径>` + `launch/trio.ps1` 三窗口（见 `docs/plan.md` M6）。
 
 ## 当前等你拍板的事（决策者入口）
 
@@ -21,16 +21,16 @@ M6 之前无法接入任何项目。
 
 | 事 | 现在是什么状态 | 你要做什么 | 落点（判定写这里） |
 |---|---|---|---|
-| ① M5 验收判定 | tester 三修复轮已完成，凭证待签 | 读 `M5-wording.md`（20 条实跑拦截文案），签 PASS/FAIL | [`docs/verification/M5.md`](docs/verification/M5.md) |
-| ② M6 修复轮判定 | tester 验出 3 个真 bug 已修（schema artifact / 自检未接线 / 单 type 投递） | 读 `M6-fixes.md` 的三修复记录，签 PASS/FAIL | [`docs/verification/M6-fixes.md`](docs/verification/M6-fixes.md) |
-| ③ M6.5 判定 | dev 工具面无 arch 目标（真进程已验），凭证待签 | 复核凭证里的验证输出，签 PASS/FAIL | [`docs/verification/M6.md`](docs/verification/M6.md)（断言一） |
-| ④ M6.6 真跑 | launch 就绪，步骤已含 FAIL→修（P5 判定） | 真开三窗口跑通一个里程碑，按 M6.md 步骤 10 步 | [`docs/verification/M6.md`](docs/verification/M6.md)（断言二） |
-| ⑤ 未决 P3/P5/P7 | arch 已给倾向（P5=含 FAIL→修、P7=不进读序、P3=不加脚本），条目已从未决表删除 | 确认或驳回 arch 的判定；P5 已体现在 M6.md 步骤里 | `docs/plan.md` 的「提交纪律」节与「不做」节 |
-| ⑥ 注入自检断言缺口 | 实现已接线（agent_start 自检 + A9b 测试），但 plan.md 断言表没钉住它 | 三选一：①补 [auto] 断言 ②接受缺口删 R5 注释 ③挪后续 | `docs/plan.md` 风险节「注入自检未接通」条 |
-| ⑦ schema↔gates 一致性缺口 | 通道已通（artifact 已加），但无自动化测试防回退 | 二选一：补测试（派 dev）/ 接受为已知风险 | `docs/plan.md` 风险节「schema↔gates 一致性测试缺口」条 |
+| ① ~~M5 验收判定~~ | ✅ **已完成**（方案 A 有条件通过 → 条件已关闭，`22d1b5a`） | 无需动作 | [`docs/verification/M5.md`](docs/verification/M5.md) |
+| ② ~~M6 修复轮判定~~ | ✅ **已完成**（liwen 签；判定栏 R3–R7 全记录，含 M6-010 修复轮 red-first 证据） | 无需动作 | [`docs/verification/M6-fixes.md`](docs/verification/M6-fixes.md) |
+| ③ ~~M6.5 判定~~ | ✅ **已完成**（liwen 签 PASS：真进程工具面无 arch 目标，schema 按角色隔离） | 无需动作 | [`docs/verification/M6.md`](docs/verification/M6.md)（断言一） |
+| ④ ~~M6.6 真跑~~ | ✅ **已完成**（第二轮重跑自动成环 PASS，liwen 签：M6-010 唤醒修复后判据 1–4 全过，全程零注入） | 无需动作 | [`docs/verification/M6.md`](docs/verification/M6.md)（断言二） |
+| ⑤ ~~未决 P3/P5/P7~~ | ✅ **已落实**（arch 判定无驳回：P5 经 M6-011 定案后以选项②落地、P7 已体现、P3 不加脚本） | 无需动作（仍可事后驳回） | `docs/plan.md` 的「提交纪律」节与「不做」节 |
+| ⑥ 注入自检断言缺口 | **arch 已判：不补新断言**（A9b 在 M6.1 目录范围内已覆盖；再补 grep 断言 = D-40 ②问的保护自证） | 无需动作（除非驳回）；R5 头注释改指向 A9b，随下次提交 | `docs/plan.md` 风险节「注入自检（P1）已接通」条 |
+| ⑦ ~~schema↔gates 一致性缺口~~ | ✅ **已闭环**（M6-004 `b78b02a`：P2 一致性测试钉住，删 FIELDS/union 字段即红） | 无需动作 | `docs/plan.md` 风险节「M6 收尾定案」 |
 
-**完成 ①–④ 后**：M6 打 ✅，`npm run docs:progress` 重生进度表，六里程碑全验收。
-**⑤–⑦ 是收尾决策**，不阻塞 M6 验收，但拖久了会丢失上下文（判定只活在对话里）。
+**①–⑦ 全部完成**（2026-08-23）：M6 已验收，六里程碑全验收。里程碑阶段结束，
+后续 = 在真实项目里接入并跑里程碑（`pi install -l` + `launch/trio.ps1`）。
 
 ## 现在能跑什么
 
