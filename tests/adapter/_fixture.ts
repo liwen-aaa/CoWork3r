@@ -197,3 +197,16 @@ export function assertParamsMatchSchema(schema: unknown, params: Record<string, 
     }
   }
 }
+
+/** 轮询等待（唤醒/落盘路径的时序断言用，A9d/E1）。20ms 步进，默认 3s 超时 */
+export function waitFor(fn: () => boolean, timeoutMs = 3000): Promise<void> {
+  const t0 = Date.now();
+  return new Promise((resolve, reject) => {
+    const tick = (): void => {
+      if (fn()) return resolve();
+      if (Date.now() - t0 > timeoutMs) return reject(new Error(`waitFor 超时（${timeoutMs}ms）`));
+      setTimeout(tick, 20);
+    };
+    tick();
+  });
+}

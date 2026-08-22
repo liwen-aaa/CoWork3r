@@ -8,21 +8,25 @@
  * sendUserMessage 语义、系统提示注入链）——那是 M6 那条 [human]（真开三窗口）
  * 存在的理由，不能用 E1 顶掉。
  *
- * 驱动方式：不真的开进程、不真的等 watchInbox 轮询。每个角色 = 一个 fake pi，
- * wire 注册好工具与拦截后，测试扮演 LLM：
+ * 驱动方式：不真的开进程。每个角色 = 一个 fake pi，wire 注册好工具与拦截后，
+ * 测试扮演 LLM：
  *   ① 调 `send_task` 工具前，先 emit tool_call（wire 的拦截 handler 跑链）
  *   ② 没被拦 → 调工具的 execute（deliver 消息）
- *   ③ 断言收件箱落点 + state 变化
- * 「收到消息后 LLM 该怎么反应」不测（那是 M6 [human]），测的是机器部分。
+ *   ③ 断言收件箱落点 + 状态变化
+ * 唤醒层（M6-010）走真实 watchInbox（注入窄参数：watch: null + 小 pollMs，C1 同款）——
+ * 消息落盘 → 窗口收到通知，收件箱被消费清空（C2）。“收到消息后 LLM 该怎么反应”
+ * 不测（那是 M6 [human]），测的是机器部分。
  *
  * 工具 execute 的 root 从 ctx.cwd 来（pi 文档：execute 最后一个参数是 ctx）。
  * 产出文件路径走 `artifact` 字段（G_artifact 读它），source 目录里放真文件（G_source）。
  */
 import { describe, expect, it } from "vitest";
 
-import { peek, readState } from "../../src/channel/index.ts";
+import { peek, readState, watchInbox } from "../../src/channel/index.ts";
+import type { Stop, WatchOptions } from "../../src/channel/watch.ts";
+import type { Message, Role } from "../../src/protocol/index.ts";
 import { wire } from "../../src/adapter/index.ts";
-import { fakePi, installPlan, makeProject, realConfig, assertParamsMatchSchema } from "../adapter/_fixture.ts";
+import { fakePi, installPlan, makeProject, realConfig, assertParamsMatchSchema, waitFor } from "../adapter/_fixture.ts";
 
 /** 找到 send_task 工具的 execute（fakePi 记录了 registerTool 的 def） */
 function sendTask(pi: ReturnType<typeof fakePi>) {
@@ -44,6 +48,7 @@ describe("E1 完整一圈", () => {
   it("分发 → 产出 → FAIL → 修 → PASS → /pass → 回 arch", async () => {
     const p = makeProject("e1-circle");
     const root = p.root;
+    const stops: Array<() => void> = []; // 唤醒句柄：finally 里必须全停（watchInbox 有定时器）
     try {
       const { cfg } = realConfig(root, {
         plan: installPlan(root),
@@ -56,9 +61,19 @@ describe("E1 完整一圈", () => {
       const arch = fakePi();
       const dev = fakePi();
       const tester = fakePi();
-      wire("arch", arch as never);
-      wire("dev", dev as never);
-      wire("tester", tester as never);
+      // 唤醒接线（M6-010）：消息落盘 → 窗口被唤醒。注入窄参数的真实 watchInbox
+      // （C1 同款：watch: null + 小 pollMs），消息走真实 deliver 落盘（D-25）
+      const watch = (root: string, role: Role, onMessage: (m: Message) => void, o: WatchOptions): Stop =>
+        watchInbox(root, role, onMessage, { watch: null, pollMs: 40, catchupMs: 20, ...(o.onWake ? { onWake: o.onWake } : {}) });
+      stops.push(
+        wire("arch", arch as never, { watch }),
+        wire("dev", dev as never, { watch }),
+        wire("tester", tester as never, { watch }),
+      );
+      // session_start 启动各窗口的唤醒（tui 才有会话窗口）
+      arch.emit("session_start", {}, { cwd: root, mode: "tui" });
+      dev.emit("session_start", {}, { cwd: root, mode: "tui" });
+      tester.emit("session_start", {}, { cwd: root, mode: "tui" });
 
       const send = {
         arch: sendTask(arch),
@@ -79,9 +94,12 @@ describe("E1 完整一圈", () => {
       const assign = { type: "task_assignment", milestone: "M1", body: "造 src/hello.txt" };
       expect(intercept.arch(assign)).toBeUndefined(); // 链放行
       await send.arch(assign, root);
-      const got1 = peek(root, "dev");
-      expect(got1?.type).toBe("task_assignment");
-      expect(got1?.milestone).toBe("M1");
+      // 消息落盘 → dev 窗口被唤醒（M6-010 真实路径）；唤醒消息带全内容
+      await waitFor(() => dev.sent.some((s) => s.text.includes("task_assignment")));
+      const devWake = dev.sent.find((s) => s.text.includes("task_assignment"));
+      expect(devWake?.text).toContain("arch → dev");
+      expect(devWake?.text).toContain("M1");
+      expect(peek(root, "dev")).toBeNull(); // C2：唤醒即消费，收件箱清空
 
       // ── 2. dev 产出缺断言结论 → G-artifact 拦 ───────────────────
       // 产出文件存在但只写了 M1.1（漏 M1.2）——uncovered 判定会列缺的编号
@@ -105,8 +123,9 @@ describe("E1 完整一圈", () => {
       const good = { milestone: "M1", body: "做完了", artifact: "wf/dev-output-M1.md" };
       expect(intercept.dev(good)).toBeUndefined();
       await send.dev(good, root);
-      const got2 = peek(root, "tester");
-      expect(got2?.type).toBe("review_request");
+      await waitFor(() => tester.sent.some((s) => s.text.includes("review_request")));
+      expect(tester.sent.find((s) => s.text.includes("review_request"))?.text).toContain("dev → tester");
+      expect(peek(root, "tester")).toBeNull();
 
       // ── 4. tester 验收：报告缺判定行 → fix_request 回 dev ───────
       // tester 发 fix_request 前先写自己的报告（G_artifact_report 挂在
@@ -123,8 +142,8 @@ describe("E1 完整一圈", () => {
       };
       expect(intercept.tester(fix)).toBeUndefined();
       await send.tester(fix, root);
-      const got3 = peek(root, "dev");
-      expect(got3?.type).toBe("fix_request");
+      await waitFor(() => dev.sent.some((s) => s.text.includes("fix_request")));
+      expect(peek(root, "dev")).toBeNull();
       const s1 = readState(root);
       expect(s1.round).toBe(2);
       expect(s1.consecutiveFails).toBe(1);
@@ -150,12 +169,13 @@ describe("E1 完整一圈", () => {
       const passed = { type: "milestone_passed", milestone: "M1", evidence: "已对照断言逐条核对" };
       expect(intercept.tester(passed)).toBeUndefined();
       await send.tester(passed, root);
-      const archGot = peek(root, "arch");
-      expect(archGot?.type).toBe("milestone_passed");
+      await waitFor(() => arch.sent.some((s) => s.text.includes("milestone_passed")));
+      expect(peek(root, "arch")).toBeNull();
       const s2 = readState(root);
       expect(s2.consecutiveFails).toBe(0);
       expect(s2.round).toBe(1);
     } finally {
+      for (const s of stops) s(); // 唤醒句柄必须全停，否则定时器让进程不退出（M1 断言同判据）
       p.cleanup();
     }
   });
