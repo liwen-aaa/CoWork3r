@@ -1,15 +1,12 @@
 /**
- * 三个角色共用的接线逻辑（差异全在数据里）：查表、挂钩子、转交、推进。
- * 业务判据在 05-gates / 02-protocol / 01-channel；pi 只以类型存在（D-07）——pi 与 ctx
- * 一路作参数、不存模块作用域（A9）；root 从 ctx.cwd 来，不缓存。角色激活见 activate.ts。
- * 钩子：session_start → widget+唤醒+代排；before/agent_start → 注入+自检；tool_call → 跑链；
- * agent_end → 提醒（A9c）。send_task = 唯一投递口。
+ * 三角色共用接线：查表、挂钩子、转交、推进。业务判据在下层；pi 只以类型存在（D-07）。
+ * 钩子：session_start / before·agent_start / tool_call / agent_end（A9c 投递提醒 + A15 待签提醒）。
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { build, checkRoute, resolveType, sendTaskDescription, sendTaskSchema, typesFrom } from "../protocol/index.ts";
 import { inspectConfig } from "../config/index.ts";
 import { parsePlan, milestone } from "../plan/index.ts";
-import { deliver, readState } from "../channel/index.ts";
+import { deliver, humanPendingItems, readState } from "../channel/index.ts";
 import { G_source_chained, chainFor, configGate, runChain, takeSourceBaseline } from "../gates/index.ts";
 import { buildSystemPrompt } from "../roles/index.ts";
 import type { SpecRole } from "../roles/index.ts";
@@ -21,7 +18,7 @@ import { guardNoMilestone } from "./guard.ts";
 import type { WindowRole } from "./activate.ts";
 import { wireWake, type WakeOptions } from "./wake.ts";
 import { wireHumanDrain } from "./drain.ts";
-import { REMIND_TEXT, shouldRemind } from "./remind.ts";
+import { REMIND_TEXT, pendingPromptText, shouldPromptPending, shouldRemind } from "./remind.ts";
 import { consumeFlowSignals } from "./signals.ts";
 import { refreshWidget, type WidgetContext } from "./widget.ts";
 export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {}): () => void {
@@ -36,8 +33,7 @@ export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {})
     if (uiCtx !== null) refreshWidget(uiCtx, role);
   };
   const wake = wireWake(role, pi, { ...opts, onHandled: refreshFromWake }); // 唤醒接线（M6-010）+ 状态条刷新（A12）
-  // 人的收件箱代排（A9g）：human 无窗口，槽位不排就是永久锁。只在 arch 生效，见 drain.ts
-  const drain = wireHumanDrain(role, pi, { ...(opts.watch === undefined ? {} : { watch: opts.watch }), onHandled: refreshFromWake });
+  const drain = wireHumanDrain(role, pi, { ...(opts.watch === undefined ? {} : { watch: opts.watch }), onHandled: refreshFromWake }); // A9g 代排 + A12 刷新
   /** 投递 + 推进状态。from 由 role 决定（越权在类型层不可能）；to 由 ROUTES 决定 */
   const deliverMsg = (ctx: WidgetContext, input: Record<string, unknown>): { ok: true } | { ok: false; reason: string } => {
     const cwd = ctx.cwd;
@@ -126,6 +122,11 @@ export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {})
   // 收尾提醒：判定全在 remind.ts；无里程碑 / print/rpc 无会话窗口 → 不提醒
   pi.on("agent_end", (event, ctx) => {
     refresh(ctx as WidgetContext); // 回合边界兜外部改动（别的窗口投递、人手改文件）——A12
+    // 待签提醒（A15）：arch 是人的代理，台账有待办就推给人，不用人主动查
+    if (role === "arch" && ctx.mode === "tui") {
+      const { lines } = humanPendingItems(ctx.cwd);
+      if (lines.length > 0 && shouldPromptPending(event.messages)) pi.sendUserMessage(pendingPromptText(lines), { deliverAs: "followUp" });
+    }
     if (readState(ctx.cwd).milestone === "" || ctx.mode !== "tui") return;
     if (!shouldRemind(event.messages)) return;
     pi.sendUserMessage(REMIND_TEXT, { deliverAs: "followUp" });

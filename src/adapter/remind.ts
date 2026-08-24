@@ -35,6 +35,8 @@ export type TurnMessage = {
 /** 唤醒消息与提醒消息的前缀。两者都由本套自己发出，是判定的唯一锚 */
 const WAKE_PREFIX = "wf: 收到";
 const REMIND_PREFIX = "wf: 本轮结束";
+/** 待签提醒的独立前缀（A15）：与投递提醒分开，否则两条提醒会互相误判对方的锚 */
+export const PENDING_PREFIX = "wf: 待你判定";
 
 export const REMIND_TEXT = "wf: 本轮结束。若已完成请调 send_task 投出去。";
 
@@ -76,4 +78,19 @@ export function shouldRemind(messages: readonly TurnMessage[]): boolean {
       m.content.some((c) => c.type === "toolCall" && c.name === "send_task"),
   );
   return !sent;
+}
+
+/**
+ * 待签提醒该不该发（A15）：本轮没展示过（防 followUp 自循环，锚 = 已提醒过的 user 消息）。
+ * 待办在台账里就一直有效，空转轮次也该提醒——人可能正等这个。
+ */
+export function shouldPromptPending(messages: readonly TurnMessage[]): boolean {
+  const users = messages.filter((m) => m.role === "user").map((m) => userText(m.content));
+  return !users.some((t) => t.startsWith(PENDING_PREFIX));
+}
+
+/** 待签提醒的正文（A15）：第一条待办的问题原文 + 指路。必须带内容，不能只有条数 */
+export function pendingPromptText(lines: readonly string[]): string {
+  if (lines.length === 0) return "";
+  return `${PENDING_PREFIX}：${lines.length} 条等你签。第一条：\n${lines[0]}\n（剩下的跑 /pending——待签内容会随 tester 的 questions 带全）`;
 }

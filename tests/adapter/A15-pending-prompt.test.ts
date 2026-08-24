@@ -70,8 +70,9 @@ describe("A15 待签提醒", () => {
       expect(remind, "待签事项没被推给 arch 窗口").toBeDefined();
       expect(remind!.text).toContain("M2.5");
       expect(remind!.text, "提醒必须带要签的问题本身，不能只有条数").toContain("1.5 分钟");
-      // 投递提醒不该发（本轮有活但没投，是投递提醒的场景）——两条提醒独立
-      expect(t.pi.sent.some((s) => s.text.startsWith("wf: 本轮结束"))).toBe(false);
+      // 两条提醒独立触发：本轮有活没投（投递提醒该发）+ 有待办（待签提醒该发）
+      // 各发各的，不互相抑制（防循环靠各自的前缀锚，不靠互斥）
+      expect(t.pi.sent.some((s) => s.text.startsWith("wf: 本轮结束"))).toBe(true);
     } finally {
       t.stopAll();
       t.cleanup();
