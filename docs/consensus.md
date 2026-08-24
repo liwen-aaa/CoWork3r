@@ -19,7 +19,7 @@
 
 - 共识:arch 把人话翻译成确定格式;人只做三件事——看(常驻进度)、说(人话,对 arch)、确认(仅放行)
 - 拒绝:人直接进协议(`from:"human"` 保持为空,协议层零改动);放行以外的翻译也逐条确认(窗口可打断,翻译错了会被看见)
-- 物化:✅ `src/roles/arch.md`(意图表 + 代理职责)+ ✅ `src/roles/human.md` + ✅ `src/gates/release.ts`(凭证三段 gate,挂 arch:milestone_passed 链)+ ✅ `src/protocol/routes.ts`(from→arch)+ ✅ 删 pass/fail 命令(commands.ts);⏳ 打断留痕(通道 B);⏳ widget 常驻(现为 bootBriefing sendUserMessage)
+- 物化:✅ `src/roles/arch.md`(意图表 + 代理职责)+ ✅ `src/roles/human.md` + ✅ `src/gates/release.ts`(凭证三段 gate,挂 arch:milestone_passed 链)+ ✅ `src/protocol/routes.ts`(from→arch)+ ✅ 删 pass/fail 命令(commands.ts)+ ✅ `src/adapter/drain.ts`(arch 代排人的收件箱)+ ✅ `src/channel/ledger.ts`(待人工台账,D-30 载体);⏳ 打断留痕(通道 B);⏳ widget 常驻(现为 bootBriefing sendUserMessage)
 
 ## 3. 打断留痕(通道 B)
 
@@ -31,7 +31,8 @@
 
 - 共识:单槽位 + O_EXCL 原子创建 = 锁,文件名即锁,禁止覆盖;覆盖从可能变成不可能
 - 拒绝:互斥量/队列/目录+序号(触发条件未到,D-42);「检查+写」分离(跨进程有竞态窗口)
-- 物化:✅ `src/channel/atomic.ts`(writeTextExclusive,O_EXCL)+ `tests/channel/C7-overwrite-warn.test.ts`(禁止覆盖三用例)
+- 推论(2026-08-24 实测):**锁必须有释放者**。human 无窗口无 watcher → 槽位永不释放 → FAIL 重试与 stuck 急救通道不通(happy path 恰好自清,所以 E1 全绿而真路径断);代排见 ②
+- 物化:✅ `src/channel/atomic.ts`(writeTextExclusive,O_EXCL)+ `tests/channel/C7-overwrite-warn.test.ts`(禁止覆盖三用例) + ✅ `tests/adapter/A9g-human-inbox-drain.test.ts`(锁有释放者)
 
 ## 5. gate 装在 tool_call(行为时拦截)
 
