@@ -5,9 +5,8 @@
  * 本文件对 pi 只有 `import type`，pi 与 ctx 一路作参数传，不存模块作用域（A9 验的）；
  * root 从 ctx.cwd 来，每次事件独立解析，不缓存。角色激活判定在 activate.ts。
  * ── 钩子与工具 ────────────────────────────────────────────
- * session_start → 简报 + 唤醒接线（wireWake）+ 人的收件箱代排（wireHumanDrain，arch 才有）；
- * before/agent_start → 注入与自检；tool_call → 跑链；agent_end → 未投递提醒（A9c）。
- * send_task = 唯一投递口。
+ * session_start → 简报(widget)+唤醒+代排（arch 才有）；before/agent_start → 注入与自检；
+ * tool_call → 跑链；agent_end → 提醒（A9c）。send_task = 唯一投递口。
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { build, checkRoute, resolveType, sendTaskDescription, sendTaskSchema, typesFrom } from "../protocol/index.ts";
@@ -26,7 +25,7 @@ import type { WindowRole } from "./activate.ts";
 import { wireWake, type WakeOptions } from "./wake.ts";
 import { wireHumanDrain } from "./drain.ts";
 import { REMIND_TEXT, shouldRemind } from "./remind.ts";
-
+import { consumeFlowSignals } from "./signals.ts";
 export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {}): () => void {
   const wake = wireWake(role, pi, opts); // 唤醒接线（M6-010）：句柄 keyed by root，见 wake.ts
   // 人的收件箱代排（A9g）：human 无窗口，槽位不排就是永久锁。只在 arch 生效，见 drain.ts
@@ -42,8 +41,9 @@ export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {})
     const msg = build(type, role, { ...input, from: role });
     const r = deliver(cwd, msg, checkRoute);
     if (!r.ok) return { ok: false, reason: r.reason };
-    // maxRounds 从配置来（D-52：不传则 State 默认 5 遮蔽配置值，A9j 钉着）
-    FLOW[msg.type]({ root: cwd, msg, milestone: milestone(parsed.plan, msg.milestone ?? ""), maxRounds: cfg.maxRounds });
+    // maxRounds 从配置来（D-52）；escalate/stuck 信号消费见 signals.ts（自检缺陷 #3）
+    const flow = FLOW[msg.type]({ root: cwd, msg, milestone: milestone(parsed.plan, msg.milestone ?? ""), maxRounds: cfg.maxRounds });
+    consumeFlowSignals(cwd, flow, msg.milestone ?? "");
     return { ok: true };
   };
 
