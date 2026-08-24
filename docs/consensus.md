@@ -19,7 +19,7 @@
 
 - 共识:arch 把人话翻译成确定格式;人只做三件事——看(常驻进度)、说(人话,对 arch)、确认(仅放行)
 - 拒绝:人直接进协议(`from:"human"` 保持为空,协议层零改动);放行以外的翻译也逐条确认(窗口可打断,翻译错了会被看见)
-- 物化:⏳ 意图表进 `roles/arch.md`;⏳ `milestone_passed` 凭证三段 gate(人原话+arch 整理+确认标记);⏳ 删 `/pass` `/fail` 命令;⏳ 新增 `roles/human.md`(不进 system prompt)
+- 物化:✅ `src/roles/arch.md`(意图表 + 代理职责)+ ✅ `src/roles/human.md` + ✅ `src/gates/release.ts`(凭证三段 gate,挂 `arch:milestone_passed` 链)+ ✅ `src/protocol/routes.ts`(from→arch)+ ✅ 删 `/pass` `/fail`(commands.ts);⏳ 打断留痕(通道 B);⏳ widget 常驻(现为 bootBriefing sendUserMessage)
 
 ## 3. 打断留痕(通道 B)
 
