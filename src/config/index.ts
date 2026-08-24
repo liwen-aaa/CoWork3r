@@ -35,7 +35,7 @@
  * 老仓库因为它可选，paper 全程没配、快照校验从未生效、M1-R3 的零改动投递
  * 靠 tester 手查 mtime 才发现。那正是 D-23 的来源事故。
  */
-export { CONFIG_FILENAME, FIELDS, LEGACY_FIELDS } from "./fields.ts";
+export { CONFIG_FILENAME, FIELDS, LEGACY_FIELDS, TEST_NULL_NOTICE } from "./fields.ts";
 export type { Config } from "./fields.ts";
 export { fatalReason, inspectConfig } from "./inspect.ts";
 export type { Diagnostic, Inspection } from "./inspect.ts";

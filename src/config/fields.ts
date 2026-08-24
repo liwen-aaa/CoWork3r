@@ -72,6 +72,17 @@ export const FIELDS: Record<keyof Config, Spec> = {
  * testDir（从 test 命令推导或不检查）、sBlacklist / buildCmd（S 档位砍了）、
  * statusFile（与 plan 重复，正是那个分裂点）、conventionsFile（约定台账砍了）。
  */
+/**
+ * D-23 的降级提示文案——**唯一权威**。
+ *
+ * 曾三处手写字符级相同的字符串（config/inspect.ts 诊断、gates/run-command.ts 的
+ * commandGateStatus、adapter/status.ts 简报），commandGateStatus 还是零调用点的哑弹
+ * （D-49）。改一处文案牵三处 = D-03 + D-04 同时违反。所以定义在这里，
+ * config 层与 gates 层都从这取（依赖方向允许：05-gates 已 import 03-config）。
+ */
+export const TEST_NULL_NOTICE =
+  "自动验证已关闭（test: null）：PASS 只靠结构检查 + 人工关卡";
+
 export const LEGACY_FIELDS = [
   "testDir",
   "sBlacklist",

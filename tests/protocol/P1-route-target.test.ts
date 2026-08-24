@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { channelPaths, deliver } from "../../src/channel/index.ts";
-import { build, validate } from "../../src/protocol/index.ts";
+import { build, checkRoute } from "../../src/protocol/index.ts";
 import { ROUTES } from "../../src/protocol/routes.ts";
 import type { MsgType } from "../../src/protocol/message.ts";
 import { makeRoot, sampleFields } from "./_fixture.ts";
@@ -40,7 +40,7 @@ describe("P1 投递落点", () => {
         // to 由表决定，不由调用方传
         expect(msg.to).toBe(route.to);
 
-        const r = deliver(root, msg, (m) => validate(m).ok ? { ok: true } : { ok: false, reason: "invalid" });
+        const r = deliver(root, msg, checkRoute);
         expect(r.ok).toBe(true);
 
         // 真的去磁盘上找它

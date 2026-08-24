@@ -148,7 +148,10 @@ describe("E1 完整一圈", () => {
       expect(s1.round).toBe(2);
       expect(s1.consecutiveFails).toBe(1);
 
-      // ── 5. dev 补判定行，重投 → PASS，verdict_pass 发给人 ────────
+      // ── 5. dev 补判定行 + 真改源码，重投 → PASS，verdict_pass 发给人 ──
+      //（G_source 要求每次 review_request 时源码比上次投递点有变化——修复轮只改
+      //  产出文档会被拦「没有变化」；dev 的修复必须真动了东西，这是它的判据）
+      p.file("src/hello.txt", "ok\nok\n"); // 源码变化：修复轮真改了
       const retry = { milestone: "M1", body: "补了判定行", artifact: "wf/dev-output-M1.md" };
       expect(intercept.dev(retry)).toBeUndefined();
       await send.dev(retry, root);

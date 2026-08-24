@@ -18,6 +18,7 @@ import type { State } from "../channel/index.ts";
 import { channelPaths } from "../channel/index.ts";
 import { frontier } from "../plan/index.ts";
 import type { Plan, Milestone } from "../plan/index.ts";
+import { commandGateStatus } from "../gates/index.ts";
 import type { Diagnostic } from "../config/index.ts";
 
 export type BootContext = {
@@ -66,10 +67,10 @@ export function bootBriefing(ctx: BootContext): string {
   const pendingHuman = humanPending(ctx.root);
   if (pendingHuman) lines.push(`待你判定：${pendingHuman}`);
 
-  // 降级提示
-  if (ctx.cfg.test === null) {
-    lines.push("自动验证已关闭（test: null）：PASS 只靠结构检查 + 人工关卡");
-  }
+  // 降级提示：文案唯一权威在 config 的 TEST_NULL_NOTICE，由 commandGateStatus 产出——
+  // 曾三处手写（D-03/D-04 违反，commandGateStatus 曾是 D-49 哑弹）
+  const gs = commandGateStatus(ctx.cfg);
+  if (gs.notice !== undefined) lines.push(gs.notice);
 
   return lines.join("\n");
 }

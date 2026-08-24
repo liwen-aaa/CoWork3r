@@ -13,7 +13,7 @@ import { build, checkRoute, resolveType, sendTaskDescription, sendTaskSchema, ty
 import { inspectConfig } from "../config/index.ts";
 import { parsePlan, milestone } from "../plan/index.ts";
 import { deliver, readState } from "../channel/index.ts";
-import { CHAINS, runChain } from "../gates/index.ts";
+import { G_source_chained, chainFor, configGate, runChain, takeSourceBaseline } from "../gates/index.ts";
 import { buildSystemPrompt } from "../roles/index.ts";
 import type { SpecRole } from "../roles/index.ts";
 import { bootBriefing } from "./status.ts";
@@ -89,8 +89,17 @@ export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {})
 
   pi.on("tool_call", (event, ctx) => {
     if (event.toolName !== "send_task") return;
-    const { cfg } = inspectConfig(ctx.cwd);
-    if (!cfg) return;
+    const { cfg, diagnostics } = inspectConfig(ctx.cwd);
+    if (!cfg) {
+      // 配置坏：拦「宣布完成」，放行「继续开发」（configGate 的不对称，03-config 文件头同一条）。
+      // 不能整链跳过——那等于配置坏了什么都能宣布（fail-open，自检缺陷 #2）。
+      const type = resolveType(role, event.input);
+      if (type) {
+        const g = configGate(diagnostics, type);
+        if (!g.ok) return { block: true, reason: g.reason };
+      }
+      return;
+    }
     const parsed = parsePlan(ctx.cwd, cfg.plan);
     if (!parsed.ok) return;
     const type = resolveType(role, event.input);
@@ -98,18 +107,30 @@ export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {})
     const stateM = milestone(parsed.plan, readState(ctx.cwd).milestone);
     const guard = guardNoMilestone(type, stateM, event.input.milestone, parsed.plan);
     if (!guard.allow) return { block: true, reason: guard.reason };
-    const chain = CHAINS[`${role}:${type}`];
-    if (!chain) return;
+    // chainFor 而非 CHAINS[key]：查不到返回 null（区分「声明无 gate」与「键写错了」）——
+    // 键写错不再静默放行（D-49：chainFor 曾是零调用点的哑弹）
+    const chain = chainFor(role, type);
+    if (chain === null) {
+      return { block: true, reason: `内部错误：${role}:${type} 不在拦截链表（CHAINS）里。加一道 gate 只改表，不动接线` };
+    }
     const r = runChain(chain, { root: ctx.cwd, cfg, milestone: guard.milestone as never, input: event.input });
     if (!r.ok) return { block: true, reason: r.reason };
+    // 链含 G_source：本次投递通过后把源码基线推进到当前快照。
+    // 否则基线永不存在、G_source 恒放行——「只写产出说明不改代码」防线是空的（D-49 哑弹）
+    if (chain.includes(G_source_chained)) takeSourceBaseline(ctx.cwd, cfg.source);
   });
 
   pi.on("agent_end", (event, ctx) => {
     if (readState(ctx.cwd).milestone === "" || ctx.mode !== "tui") return; // 无里程碑或 print/rpc 无会话窗口
+    const ms = event.messages;
+    // 本轮没有「wf: 收到…」唤醒消息（无任务上下文：空转/闲聊轮次）→ 不提醒。
+    // 提醒语义是「有活该投」，没活提醒 = 逼 LLM 自问该不该投（M6-013，retro 八）
+    const hasWork = ms.some((m) => m.role === "user" && (typeof m.content === "string" ? m.content : m.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("")).startsWith("wf: 收到"));
+    if (!hasWork) return;
     // 已投递或本轮由上一条提醒触发 → 不再提醒（followUp 自触发新回合 = 死循环，实测 2026-08-22）。
     // user 文本兼容 string 与数组两形态：真实 followUp 的 content 是 [{type:"text",text}]
     // （pi agent-session.js _queueFollowUp 构造），只认 string 会漏判 → 循环继续烧
-    const sent = event.messages.some((m) => (m.role === "assistant" && m.content.some((c) => c.type === "toolCall" && c.name === "send_task")) || (m.role === "user" && (typeof m.content === "string" ? m.content : m.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("")).startsWith("wf: 本轮结束")));
+    const sent = ms.some((m) => (m.role === "assistant" && m.content.some((c) => c.type === "toolCall" && c.name === "send_task")) || (m.role === "user" && (typeof m.content === "string" ? m.content : m.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("")).startsWith("wf: 本轮结束")));
     if (sent) return;
     pi.sendUserMessage("wf: 本轮结束。若已完成请调 send_task 投出去。", { deliverAs: "followUp" });
   });

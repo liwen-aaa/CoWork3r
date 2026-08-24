@@ -77,48 +77,6 @@ export function build(type: MsgType, from: Role, fields: Partial<Message> = {}):
  * reason 会进拦截提示，所以每条都要写出**期望值**——只说「不对」等于没说
  * （老仓库 dev 4/4 vs tester 0/4 的差别就在提示措辞里有没有列出该写什么）。
  */
-export function validate(
-  raw: unknown,
-): { ok: true; msg: Message } | { ok: false; reason: string } {
-  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
-    return { ok: false, reason: `不是消息对象（收到 ${Array.isArray(raw) ? "数组" : typeof raw}）` };
-  }
-
-  const m = raw as Record<string, unknown>;
-
-  if (!isType(m.type)) {
-    return {
-      ok: false,
-      reason: `未知 type "${String(m.type)}"。合法取值：${TYPES.join(" / ")}`,
-    };
-  }
-
-  const route = ROUTES[m.type];
-
-  if (m.from !== route.from) {
-    return { ok: false, reason: `${m.type} 的 from 应为 "${route.from}"，实际 "${String(m.from)}"` };
-  }
-  if (m.to !== route.to) {
-    return { ok: false, reason: `${m.type} 的 to 应为 "${route.to}"，实际 "${String(m.to)}"` };
-  }
-
-  const missing = route.requires.filter((k) => !hasField(m, k));
-  if (missing.length > 0) {
-    return { ok: false, reason: `${m.type} 缺必填字段：${missing.join(" / ")}` };
-  }
-
-  const omitted: readonly string[] = "omit" in route ? route.omit : [];
-  if (!omitted.includes("milestone") && !hasField(m, "milestone")) {
-    return { ok: false, reason: `${m.type} 缺必填字段：milestone` };
-  }
-
-  if (typeof m.at !== "string" || Number.isNaN(Date.parse(m.at))) {
-    return { ok: false, reason: `at 不是合法 ISO 时间戳（实际 "${String(m.at)}"）` };
-  }
-
-  return { ok: true, msg: m as unknown as Message };
-}
-
 /**
  * C8 注入用：只查地址，不查内容。
  *
@@ -126,6 +84,11 @@ export function validate(
  * 对象，此刻要防的是「上层绕过 build 直接拼了个 msg 往别处投」——那是老仓库那个 bug
  * 的形状。而 `validate` 防的是「磁盘上那玩意儿能不能信」。
  * 一个函数干两件事就是下一次混淆的来源。
+ *
+ * 2026-08-24：`validate` 删除（D-49 哑弹）。它是「磁盘读回来的消息校验」，而磁盘读
+ * 入口 peek() 从未调它（只 JSON.parse + typeof 检查），投递路径由 checkRoute 覆盖——
+ * 它的能力从来是死的。磁盘坏消息的真实后果：watchInbox 把它原样交进 LLM 上下文，
+ * 不会执行 FLOW（消息内容不驱动状态机），所以「不校验」可接受。
  */
 export function checkRoute(msg: Message): { ok: true } | { ok: false; reason: string } {
   if (!isType(msg.type)) {

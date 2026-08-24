@@ -32,7 +32,7 @@
  * 不做：零失败模式驱动（D-40），且角色集合改变意味着 D-01（生产者不能自证完成）
  * 的形状变了，那不是配置项，那是另一个工作流。
  */
-export { build, checkRoute, resolveType, typesFrom, validate } from "./build.ts";
+export { build, checkRoute, resolveType, typesFrom } from "./build.ts";
 export type { Issue, Message, MsgType, Role } from "./message.ts";
 export { ROUTES } from "./routes.ts";
 export { sendTaskDescription, sendTaskSchema } from "./schema.ts";

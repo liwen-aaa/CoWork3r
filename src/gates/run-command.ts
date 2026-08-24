@@ -25,6 +25,7 @@
 import { spawnSync } from "node:child_process";
 
 import { block, ok, type Result } from "./types.ts";
+import { TEST_NULL_NOTICE } from "../config/index.ts";
 import type { Config } from "../config/index.ts";
 
 const NAME = "G_command";
@@ -174,7 +175,7 @@ export function commandGateStatus(cfg: Config): { empty: boolean; notice?: strin
   if (cfg.test === null) {
     return {
       empty: true,
-      notice: "自动验证已关闭（test: null）：PASS 只靠结构检查 + 人工关卡",
+      notice: TEST_NULL_NOTICE,
     };
   }
   return { empty: false };

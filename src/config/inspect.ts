@@ -15,7 +15,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { CONFIG_FILENAME, FIELDS, LEGACY_FIELDS, type Config } from "./fields.ts";
+import { CONFIG_FILENAME, FIELDS, LEGACY_FIELDS, TEST_NULL_NOTICE, type Config } from "./fields.ts";
 
 export type Diagnostic = { level: "fatal" | "warn" | "info"; message: string };
 
@@ -125,7 +125,7 @@ export function inspectConfig(root: string): Inspection {
           // 主动声明「本项目没法自动测」。合法，但常驻提示——空 gate 是合法的，
           // 静默的空 gate 不是（D-23）
           out[name] = null;
-          diagnostics.push(info("自动验证已关闭（test: null）：PASS 只靠结构检查 + 人工关卡"));
+          diagnostics.push(info(TEST_NULL_NOTICE));
           break;
         }
         if (typeof value !== "string" || value.trim() === "") {
