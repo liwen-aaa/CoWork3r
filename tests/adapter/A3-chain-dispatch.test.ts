@@ -81,4 +81,55 @@ describe("A3 链分发", () => {
       p.cleanup();
     }
   });
+
+  it("配置坏：宣布完成类(verdict_pass)被拦、继续开发类(fix_request)放行（configGate 接线）", () => {
+    const p = makeProject("a3-cfg-bad");
+    try {
+      // 非法 JSON 配置：inspectConfig 返回 cfg:null + fatal 诊断
+      p.file("wf.config.json", "{ 这不是合法 JSON");
+
+      // tester 的 verdict_pass：cfg 坏 → G_config 拦（不能宣布通过）
+      const piPass = fakePi();
+      wire("tester", piPass as never);
+      const r1 = piPass.emit(
+        "tool_call",
+        { toolName: "send_task", input: { type: "verdict_pass" } },
+        { cwd: p.root },
+      );
+      expect(r1).toMatchObject({ block: true });
+      expect((r1 as { reason: string }).reason).toContain("不能宣布通过");
+
+      // tester 的 fix_request：cfg 坏 → 放行（配置坏了不阻止开发）
+      const piFix = fakePi();
+      wire("tester", piFix as never);
+      const r2 = piFix.emit(
+        "tool_call",
+        { toolName: "send_task", input: { type: "fix_request" } },
+        { cwd: p.root },
+      );
+      expect(r2).toBeUndefined();
+    } finally {
+      p.cleanup();
+    }
+  });
+
+  it("CHAINS 表外的 type → block，不再静默放行（chainFor 接线）", () => {
+    const p = makeProject("a3-chainfor");
+    try {
+      realConfig(p.root, { plan: installPlan(p.root) });
+      writeState(p.root, { milestone: "M1", round: 1, maxRounds: 5, consecutiveFails: 0 });
+      const pi = fakePi();
+      wire("dev", pi as never);
+      // 绕过 schema 的损坏/恶意输入：dev 发一个 CHAINS 里没有的 type
+      const r = pi.emit(
+        "tool_call",
+        { toolName: "send_task", input: { type: "bogus_type" } },
+        { cwd: p.root },
+      );
+      expect(r).toMatchObject({ block: true });
+      expect((r as { reason: string }).reason).toContain("不在拦截链表");
+    } finally {
+      p.cleanup();
+    }
+  });
 });
