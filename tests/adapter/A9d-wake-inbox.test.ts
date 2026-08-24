@@ -57,6 +57,12 @@ describe("A9d 唤醒链路", () => {
     const { root, pi, logs, stopAll, cleanup } = setup();
     pi.emit("session_start", {}, { cwd: root, mode: "tui" });
 
+    // 共识 ② widget：简报进常驻状态条（给人看、零 token），不再 sendUserMessage 复述状态
+    const wf = pi.widgets.find((w) => w.name === "wf");
+    expect(wf).toBeDefined();
+    expect(wf?.lines.join("\n")).toMatch(/未决/);
+    expect(pi.sent.some((s) => s.text.includes("就绪"))).toBe(false); // 转述形态已删
+
     // 投真实消息（arch → dev 的 task_assignment，走真实 build + deliver）
     const msg = build("task_assignment", "arch", { body: "造 src/hello.txt", milestone: "M1" });
     expect(deliver(root, msg, checkRoute).ok).toBe(true);

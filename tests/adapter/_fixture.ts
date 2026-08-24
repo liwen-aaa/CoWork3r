@@ -124,6 +124,7 @@ export function fakePi() {
   const tools: Array<{ name: string; def: unknown }> = [];
   const commands: Array<{ name: string; def: unknown }> = [];
   const sent: Array<{ text: string; opts?: unknown }> = [];
+  const widgets: Array<{ name: string; lines: string[] }> = [];
 
   return {
     on(event: string, handler: (...args: unknown[]) => unknown) {
@@ -156,7 +157,15 @@ export function fakePi() {
       if (!hs) return undefined;
       // agent_start 的注入自检会调 ctx.getSystemPrompt()——不传就补一个
       // 返回空串的默认（空串里没有特征串，检查方对「拿不到 prompt」是静默）
-      const safeCtx = { getSystemPrompt: () => "", ...ctx };
+      // ui.setWidget：session_start 的常驻状态条（共识 ② widget）——wire 只调 setWidget，
+      // 其它 ui 方法不猜（fakePi 原则②：新增 pi.xxx 调用就补同名记录器）
+      const safeCtx = {
+        getSystemPrompt: () => "",
+        ui: {
+          setWidget: (name: string, lines: string[]) => widgets.push({ name, lines }),
+        },
+        ...ctx,
+      };
       let result: unknown;
       for (const h of hs) result = h(payload, safeCtx);
       return result;
@@ -169,6 +178,7 @@ export function fakePi() {
     tools,
     commands,
     sent,
+    widgets,
   };
 }
 
