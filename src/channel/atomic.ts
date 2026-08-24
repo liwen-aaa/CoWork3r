@@ -7,7 +7,7 @@
  * 「只有本文件能调 writeFileSync」这条可以用 grep 检查，而且 C4 有一个用例在 grep
  * （plan.md M1 也有一条断言）。这是把「有没有漏一处」变成可判定的。
  */
-import { constants, copyFileSync, mkdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, constants, copyFileSync, existsSync, mkdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 /**
@@ -74,4 +74,20 @@ export function writeTextExclusive(
 
 export function writeJsonAtomic(file: string, data: unknown): void {
   writeTextAtomic(file, JSON.stringify(data, null, 2));
+}
+
+/**
+ * 追加一段（台账语义）。首次写入时先落 `header`。
+ *
+ * 与上面两个的分工：前两个是**状态**（最后一次写赢 / 文件名即锁），
+ * 这个是**台账**：只增不改，过往条目不得被覆盖——待人工事项覆盖一条
+ * 就是一件事静默消失（D-30：需要人主动去找才看得见的待办 = 无效载体）。
+ *
+ * 不走 .tmp + rename：追加的原子单位是一段文本而不是整个文件，`appendFileSync`
+ * 在 O_APPEND 下小写入不会交错；而 rename 会拿旧快照覆盖并行窗口刚追加的那条。
+ */
+export function appendTextAtomic(file: string, text: string, header?: string): void {
+  mkdirSync(dirname(file), { recursive: true });
+  const head = header !== undefined && !existsSync(file) ? header : "";
+  appendFileSync(file, `${head}${text}`, "utf-8");
 }

@@ -5,8 +5,9 @@
  * 本文件对 pi 只有 `import type`，pi 与 ctx 一路作参数传，不存模块作用域（A9 验的）；
  * root 从 ctx.cwd 来，每次事件独立解析，不缓存。角色激活判定在 activate.ts。
  * ── 钩子与工具 ────────────────────────────────────────────
- * session_start → 简报 + 唤醒接线（wireWake）；before/agent_start → 注入与自检；
- * tool_call → 跑链；agent_end → 未投递提醒（A9c）。send_task = 唯一投递口。
+ * session_start → 简报 + 唤醒接线（wireWake）+ 人的收件箱代排（wireHumanDrain，arch 才有）；
+ * before/agent_start → 注入与自检；tool_call → 跑链；agent_end → 未投递提醒（A9c）。
+ * send_task = 唯一投递口。
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { build, checkRoute, resolveType, sendTaskDescription, sendTaskSchema, typesFrom } from "../protocol/index.ts";
@@ -16,16 +17,19 @@ import { deliver, readState } from "../channel/index.ts";
 import { G_source_chained, chainFor, configGate, runChain, takeSourceBaseline } from "../gates/index.ts";
 import { buildSystemPrompt } from "../roles/index.ts";
 import type { SpecRole } from "../roles/index.ts";
-import { bootBriefing } from "./status.ts";
+import { briefingFor } from "./status.ts";
 import { FLOW } from "./flow.ts";
 import { registerCommands } from "./commands.ts";
 import { checkInjectedSpec } from "./selfcheck.ts";
 import { guardNoMilestone } from "./guard.ts";
 import type { WindowRole } from "./activate.ts";
 import { wireWake, type WakeOptions } from "./wake.ts";
+import { wireHumanDrain } from "./drain.ts";
 
 export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {}): () => void {
   const wake = wireWake(role, pi, opts); // 唤醒接线（M6-010）：句柄 keyed by root，见 wake.ts
+  // 人的收件箱代排（A9g）：human 无窗口，槽位不排就是永久锁。只在 arch 生效，见 drain.ts
+  const drain = wireHumanDrain(role, pi, opts.watch === undefined ? {} : { watch: opts.watch });
   /** 投递 + 推进状态。from 由 role 决定（越权在类型层不可能）；to 由 ROUTES 决定 */
   const deliverMsg = (cwd: string, input: Record<string, unknown>): { ok: true } | { ok: false; reason: string } => {
     const { cfg } = inspectConfig(cwd);
@@ -57,24 +61,13 @@ export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {})
   registerCommands(role, pi);
 
   pi.on("session_start", (_event, ctx) => {
-    const { cfg, diagnostics } = inspectConfig(ctx.cwd);
-    if (!cfg) return;
-    const parsed = parsePlan(ctx.cwd, cfg.plan);
-    const st = readState(ctx.cwd);
-    const m = parsed.ok ? milestone(parsed.plan, st.milestone) : null;
-    const brief = bootBriefing({
-      root: ctx.cwd,
-      role,
-      cfg,
-      state: st,
-      plan: parsed.ok ? parsed.plan : null,
-      milestone: m,
-      diagnostics,
-    });
+    const brief = briefingFor(ctx.cwd, role); // 拼装在 status.ts（与 /status 共用一份，D-03）
+    if (brief === null) return; // 配置不可用：窗口静默起来，/doctor 负责报诊断
     // TUI 才发就绪 + 启动唤醒（print/rpc 无会话窗口：sendUserMessage 会与处理中的消息冲突）
     if (ctx.mode === "tui") {
       pi.sendUserMessage(`wf: ${role} 就绪\n${brief}`, { deliverAs: "followUp" });
       wake.start(ctx.cwd);
+      drain.start(ctx.cwd); // arch 才真启（其它角色是空句柄）
     }
   });
 
@@ -135,5 +128,8 @@ export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {})
     pi.sendUserMessage("wf: 本轮结束。若已完成请调 send_task 投出去。", { deliverAs: "followUp" });
   });
 
-  return wake.stopAll; // 关掉全部唤醒句柄（activate 不消费；测试/热重载用）
+  return () => {
+    wake.stopAll();
+    drain.stopAll();
+  }; // 关掉全部句柄（activate 不消费；测试/热重载用）
 }

@@ -19,6 +19,7 @@
  * - **进程管理** —— 开窗口、防重、单实例检测在 08-dist（C6 只把事实钉成测试）
  * - **队列语义** —— 单槽位就是单槽位（取舍见 inbox.ts）
  * - **历史审计** —— 消息不追加历史。想要审计另开一层，不要往本层塞
+ *   （`ledger.ts` 不是例外：它只记**人的待办**，因为 human 无窗口去消费自己的槽位）
  *
  * 与其它模块的边界：02-protocol 与本层两边都不运行时 import 对方；
  * 05-gates 用 writeJsonAtomic 存基线但不直接读写 inbox；
@@ -29,6 +30,7 @@
 export { writeJsonAtomic, writeTextAtomic } from "./atomic.ts";
 export { bumpCounters } from "./counters.ts";
 export { clearIfSame, clearInbox, deliver, peek } from "./inbox.ts";
+export { appendHumanLedger } from "./ledger.ts";
 export { channelPaths } from "./paths.ts";
 export { readState, writeState } from "./state.ts";
 export { watchInbox } from "./watch.ts";

@@ -12,33 +12,21 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { inspectConfig } from "../config/index.ts";
 import { parsePlan, milestone, checkMilestone, frontier } from "../plan/index.ts";
 import { readState } from "../channel/index.ts";
-import { bootBriefing } from "./status.ts";
+import { briefingFor } from "./status.ts";
 import { research } from "../dist/research.ts";
 import { loadRoleSpec } from "../roles/index.ts";
 import type { WindowRole } from "./activate.ts";
 
 export function registerCommands(role: WindowRole, pi: ExtensionAPI): void {
-  // ── /status：四行（bootBriefing 是唯一实现，这里只喂真实输入）──
+  // ── /status：四行（briefingFor 是唯一拼装处，与 session_start 共用，D-03）──
   pi.registerCommand("status", {
     description: "四行状态：里程碑 / 待人工 / 未决 / 降级提示",
     handler: async (args, ctx) => {
-      const { cfg, diagnostics } = inspectConfig(ctx.cwd);
-      if (!cfg) {
-        ctx.ui.notify("配置解析失败，无法生成 /status", "error");
+      const text = briefingFor(ctx.cwd, role);
+      if (text === null) {
+        ctx.ui.notify("配置解析失败，无法生成 /status（跑 /doctor 看诊断）", "error");
         return;
       }
-      const parsed = parsePlan(ctx.cwd, cfg.plan);
-      const st = readState(ctx.cwd);
-      const m = parsed.ok ? milestone(parsed.plan, st.milestone) : null;
-      const text = bootBriefing({
-        root: ctx.cwd,
-        role,
-        cfg,
-        state: st,
-        plan: parsed.ok ? parsed.plan : null,
-        milestone: m,
-        diagnostics,
-      });
       ctx.ui.notify(text, "info");
     },
   });
