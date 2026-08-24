@@ -7,7 +7,7 @@
  * 「只有本文件能调 writeFileSync」这条可以用 grep 检查，而且 C4 有一个用例在 grep
  * （plan.md M1 也有一条断言）。这是把「有没有漏一处」变成可判定的。
  */
-import { mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { constants, copyFileSync, mkdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 /**
@@ -24,6 +24,52 @@ export function writeTextAtomic(file: string, text: string): void {
   const tmp = tmpName(file);
   writeFileSync(tmp, text, "utf-8");
   renameSync(tmp, file);
+}
+
+/**
+ * 独占写（O_EXCL 语义）：目标已存在即失败，不覆盖。**文件名本身是锁**（共识 #4）。
+ *
+ * 与 `writeTextAtomic` 的分工：
+ *   writeTextAtomic  覆盖写    —— 幂等写入：水位、state、基线（最后一次写赢）
+ *   writeTextExclusive 禁止覆盖 —— 单槽位收件箱投递（同一方向同时只允许一条在飞）
+ *
+ * 为什么不是「peek 检查 + writeTextAtomic」：三个窗口是三个进程，检查与写入之间
+ * 另一个进程可能已经写入——分离的检查有竞态窗口。`copyFileSync` 的 `COPYFILE_EXCL`
+ * 把「检查非空」和「写入」合并成一个跨进程原子的动作：目标存在 → EEXIST，
+ * 不存在 → 拷贝。
+ *
+ * 为什么保留 .tmp：copyFileSync 直接写目标会失去防半写——写入中途进程被杀，
+ * 目标留下半截 JSON，而那个半截文件会让后续所有投递都 EEXIST 拒绝（锁被污染）。
+ * 写 .tmp（可被下次覆盖）→ copyFileSync(COPYFILE_EXCL) → unlink tmp：
+ * 半写只坏 .tmp，目标要么完整要么不存在。
+ */
+export function writeTextExclusive(
+  file: string,
+  text: string,
+): { ok: true } | { ok: false; reason: string } {
+  mkdirSync(dirname(file), { recursive: true });
+  const tmp = tmpName(file);
+  writeFileSync(tmp, text, "utf-8");
+  try {
+    copyFileSync(tmp, file, constants.COPYFILE_EXCL);
+    try {
+      unlinkSync(tmp);
+    } catch {
+      /* tmp 残留不影响语义，下次写会覆盖 */
+    }
+    return { ok: true };
+  } catch (e) {
+    try {
+      unlinkSync(tmp);
+    } catch {
+      /* 同上 */
+    }
+    const code = (e as NodeJS.ErrnoException).code;
+    if (code === "EEXIST") {
+      return { ok: false, reason: `目标 ${file} 已存在（单槽位：同一方向同时只允许一条在飞，上一条还没被处理）` };
+    }
+    return { ok: false, reason: `写入 ${file} 失败：${String(e)}` };
+  }
 }
 
 export function writeJsonAtomic(file: string, data: unknown): void {
