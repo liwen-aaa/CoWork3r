@@ -15,7 +15,7 @@
 | `review_request` | dev → tester | `milestone` `body` `artifact` | 开发完成，请求验收 |
 | `fix_request` | tester → dev | `milestone` `issues` `artifact` | 验收 FAIL，发回修复 |
 | `verdict_pass` | tester → human | `milestone` `questions` `artifact` | 自动验证通过，等人答 [human] 断言 |
-| `milestone_passed` | tester → arch | `milestone` `evidence` | 人工放行，通知 arch 收尾/下一里程碑 |
+| `milestone_passed` | arch → arch | `milestone` `evidence` | (人的代理)人工放行，进入收尾/下一里程碑 |
 | `escalation` | tester → arch | `milestone` `body` | 同问题反复或架构疑点，升级 arch |
 | `stuck` | tester → human | `milestone` `body` | 连续失败达上限，请人介入 |
 | `report` | arch → human | `body` | 状态/收尾报告（无里程碑上下文） |
@@ -35,7 +35,7 @@ flowchart LR
   dev -->|review_request| tester
   tester -->|fix_request| dev
   tester -->|verdict_pass| human
-  tester -->|milestone_passed| arch
+  arch -->|milestone_passed| arch
   tester -->|escalation| arch
   tester -->|stuck| human
   arch -->|report| human
@@ -48,9 +48,9 @@ dev 的 schema 里没有 `arch` 这个选项，不需要运行时拦截。
 
 | 角色 | 可发 | schema 必填 |
 |---|---|---|
-| arch | `task_assignment` `verification` `report` | `type` `body` |
+| arch | `task_assignment` `verification` `milestone_passed` `report` | `type` |
 | dev | `review_request` | `milestone` `body` `artifact` |
-| tester | `fix_request` `verdict_pass` `milestone_passed` `escalation` `stuck` | `type` `milestone` |
+| tester | `fix_request` `verdict_pass` `escalation` `stuck` | `type` `milestone` |
 | human | —（伪角色：有收件箱、无窗口） | — |
 
 ## 收件箱
