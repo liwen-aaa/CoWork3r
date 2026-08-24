@@ -12,9 +12,9 @@
 |---|---|---|---|
 | `task_assignment` | arch → dev | `milestone` `body` | 分配里程碑给 dev |
 | `verification` | arch → dev | `milestone` `body` | 要求 dev 核对/补证（不改变轮次） |
-| `review_request` | dev → tester | `milestone` `body` | 开发完成，请求验收 |
-| `fix_request` | tester → dev | `milestone` `issues` | 验收 FAIL，发回修复 |
-| `verdict_pass` | tester → human | `milestone` `questions` | 自动验证通过，等人答 [human] 断言 |
+| `review_request` | dev → tester | `milestone` `body` `artifact` | 开发完成，请求验收 |
+| `fix_request` | tester → dev | `milestone` `issues` `artifact` | 验收 FAIL，发回修复 |
+| `verdict_pass` | tester → human | `milestone` `questions` `artifact` | 自动验证通过，等人答 [human] 断言 |
 | `milestone_passed` | tester → arch | `milestone` `evidence` | 人工放行，通知 arch 收尾/下一里程碑 |
 | `escalation` | tester → arch | `milestone` `body` | 同问题反复或架构疑点，升级 arch |
 | `stuck` | tester → human | `milestone` `body` | 连续失败达上限，请人介入 |
@@ -49,7 +49,7 @@ dev 的 schema 里没有 `arch` 这个选项，不需要运行时拦截。
 | 角色 | 可发 | schema 必填 |
 |---|---|---|
 | arch | `task_assignment` `verification` `report` | `type` `body` |
-| dev | `review_request` | `milestone` `body` |
+| dev | `review_request` | `milestone` `body` `artifact` |
 | tester | `fix_request` `verdict_pass` `milestone_passed` `escalation` `stuck` | `type` `milestone` |
 | human | —（伪角色：有收件箱、无窗口） | — |
 
