@@ -45,7 +45,7 @@ const FIELDS: Record<string, JsonSchema> = {
   questions: {
     type: "array",
     items: { type: "string" },
-    description: "只有人能答的那几个问题（取自该里程碑的 [human] 断言，逐条列出）",
+    description: "只有人能答的那几个问题。每条 = 该里程碑 [human] 断言的原文 + 人判断所需的全部内容（报错原文 / 样张 / 数据表）——人打开就能答，不用去翻报告（方案 A，真跑里人两次问过内容在哪）",
   },
   evidence: { type: "string", description: "放行凭证，必须三段：人原话（人的原话原文）+ arch 整理（arch 的翻译）+ 确认（人的确认标记如 Y）。缺一段会被 G_release 拦（D-01 的最后一米）" },
 };
