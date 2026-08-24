@@ -65,9 +65,11 @@ export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {})
   pi.on("session_start", (_event, ctx) => {
     const brief = briefingFor(ctx.cwd, role); // 拼装在 status.ts（与 /status 共用一份，D-03）
     if (brief === null) return; // 配置不可用：窗口静默起来，/doctor 负责报诊断
-    // TUI 才发就绪 + 启动唤醒（print/rpc 无会话窗口：sendUserMessage 会与处理中的消息冲突）
+    // TUI 才设常驻状态条 + 启动唤醒（print/rpc 无会话窗口）。
+    // widget 替代 sendUserMessage 简报（共识 ②）：状态是确定性数据，LLM 复述 = 转述；
+    // widget 零 token、给人看，LLM 需要状态时按需查（消息唤醒已覆盖该知道的）
     if (ctx.mode === "tui") {
-      pi.sendUserMessage(`wf: ${role} 就绪\n${brief}`, { deliverAs: "followUp" });
+      ctx.ui.setWidget("wf", brief.split("\n"));
       wake.start(ctx.cwd);
       drain.start(ctx.cwd); // arch 才真启（其它角色是空句柄）
     }
