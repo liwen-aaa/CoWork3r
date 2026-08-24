@@ -26,7 +26,9 @@ import {
   G_plan,
   G_source,
   checkDevOutput,
+  checkAwaiting,
   checkHumanQuestions,
+  checkRelease,
   checkTestReport,
   commandGateStatus,
   configGate,
@@ -89,6 +91,12 @@ rec("G_human", "只给了通用方向（老仓库那三条）", checkHumanQuesti
   ["结构层是否完整", "内容实质是否达标", "引用是否真实可查"],
   m,
 ));
+
+// ── G_release：放行的前置与凭证（D-01 最后一米）─────────
+// 前置那道读 state：临时目录里没有 awaitingHuman，正是「人从未被问过」的现场
+rec("G_release", "人从未被问过就放行（state 无许可）", checkAwaiting(root, m.id));
+rec("G_release", "凭证缺「人原话」段", checkRelease("arch 整理:已核对断言 确认:Y"));
+rec("G_release", "凭证缺「确认」段", checkRelease("人原话:「可以过」 arch 整理:已核对"));
 
 // ── G_source：生产内容 ───────────────────────────────────
 w("x.ts", "x\n");

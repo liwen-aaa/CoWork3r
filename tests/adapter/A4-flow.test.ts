@@ -109,7 +109,7 @@ describe("A4 flow 状态表", () => {
     }
   });
 
-  it("verification / review_request / verdict_pass / escalation / report / stuck → 状态不变", () => {
+  it("verification / review_request / escalation / report / stuck → 状态不变", () => {
     const p = makeProject("a4-unchanged");
     try {
       const m = realMilestone("M1");
@@ -122,15 +122,41 @@ describe("A4 flow 状态表", () => {
       });
       const before = readState(p.root);
 
+      // verdict_pass **不在这组**：它写 awaitingHuman（放行许可，A9h）——下一个 it 单独钉
       FLOW.verification({ root: p.root, msg: build("verification", "arch", { milestone: "M1", body: "核对一下" }), milestone: m });
       FLOW.review_request({ root: p.root, msg: build("review_request", "dev", { milestone: "M1", body: "做完了", artifact: "wf/dev-output-M1.md" }), milestone: m });
-      FLOW.verdict_pass({ root: p.root, msg: build("verdict_pass", "tester", { milestone: "M1", questions: ["能过吗"], artifact: "wf/test-report-M1.md" }), milestone: m });
       FLOW.escalation({ root: p.root, msg: build("escalation", "tester", { milestone: "M1", body: "有问题" }), milestone: m });
       FLOW.report({ root: p.root, msg: build("report", "arch", { body: "进度汇报" }), milestone: m });
       FLOW.stuck({ root: p.root, msg: build("stuck", "tester", { milestone: "M1", body: "卡住了" }), milestone: m });
 
       const after = readState(p.root);
       expect(after).toEqual(before);
+    } finally {
+      p.cleanup();
+    }
+  });
+
+  /**
+   * 放行许可的三个转换（A9h 的纯函数侧）。为何在 flow 而不在 gate：
+   * 许可必须是**机械写入**的，arch 拿不到写 state 的路，那是 D-01 在最后一米的全部依据。
+   */
+  it("verdict_pass 写许可 / fix_request 作废 / milestone_passed 消费", () => {
+    const p = makeProject("a4-awaiting");
+    try {
+      const m = realMilestone("M1");
+      const fix = build("fix_request", "tester", { milestone: "M1", artifact: "wf/test-report-M1.md", issues: [{ id: "M1-001", severity: "serious", description: "不行" }] });
+      FLOW.task_assignment({ root: p.root, msg: build("task_assignment", "arch", { milestone: "M1", body: "去干" }), milestone: m });
+      expect(readState(p.root).awaitingHuman, "分发时不应有许可").toBe("");
+
+      FLOW.verdict_pass({ root: p.root, msg: build("verdict_pass", "tester", { milestone: "M1", questions: ["能过吗"], artifact: "wf/test-report-M1.md" }), milestone: m });
+      expect(readState(p.root).awaitingHuman, "许可绑里程碑 id，不是布尔").toBe("M1");
+
+      FLOW.fix_request({ root: p.root, msg: fix, milestone: m });
+      expect(readState(p.root).awaitingHuman, "FAIL 推翻上一轮 PASS，许可作废").toBe("");
+
+      FLOW.verdict_pass({ root: p.root, msg: build("verdict_pass", "tester", { milestone: "M1", questions: ["这回行吗"], artifact: "wf/test-report-M1.md" }), milestone: m });
+      FLOW.milestone_passed({ root: p.root, msg: build("milestone_passed", "arch", { milestone: "M1", evidence: "人原话:x arch 整理:x 确认:Y" }), milestone: m });
+      expect(readState(p.root).awaitingHuman, "一次许可一次放行（单向门不能重放）").toBe("");
     } finally {
       p.cleanup();
     }

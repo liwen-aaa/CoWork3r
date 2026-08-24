@@ -36,7 +36,7 @@
 import { fatalReason } from "../config/index.ts";
 import { checkDevOutput, checkTestReport } from "./artifact.ts";
 import { checkHumanQuestions } from "./human-questions.ts";
-import { checkRelease } from "./release.ts";
+import { checkAwaiting, checkRelease } from "./release.ts";
 import { G_plan } from "./plan-ready.ts";
 import { G_command, commandGateStatus } from "./run-command.ts";
 import { G_source, takeSourceBaseline } from "./source-changed.ts";
@@ -45,7 +45,7 @@ import type { Diagnostic } from "../config/index.ts";
 
 export { checkDevOutput, checkTestReport } from "./artifact.ts";
 export { checkHumanQuestions } from "./human-questions.ts";
-export { checkRelease } from "./release.ts";
+export { checkAwaiting, checkRelease } from "./release.ts";
 export { G_plan } from "./plan-ready.ts";
 export { G_command, commandGateStatus } from "./run-command.ts";
 export { G_source, takeSourceBaseline } from "./source-changed.ts";
@@ -126,8 +126,13 @@ const G_human_chained: Gate = (ctx) => {
 };
 Object.defineProperty(G_human_chained, "name", { value: "G_human" });
 
-/** G_release 适配成统一签名：evidence 从 input 里取 */
+/**
+ * G_release 适配成统一签名：先前置（state 里真的在等人判定）再凭证（三段）。
+ * 顺序有意：「没被问过」比「凭证写得不全」更根本，先报它才不会让人以为补齐三段就行。
+ */
 const G_release_chained: Gate = (ctx) => {
+  const pre = checkAwaiting(ctx.root, ctx.milestone.id);
+  if (!pre.ok) return pre;
   const ev = typeof ctx.input.evidence === "string" ? ctx.input.evidence : "";
   return checkRelease(ev);
 };

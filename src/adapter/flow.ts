@@ -9,12 +9,15 @@
  *   task_assignment   round=1, fails=0, 存 assertionHash | dev 被唤醒
  *   verification      不变                             | dev 被唤醒
  *   review_request    不变                             | tester 被唤醒
- *   fix_request       round+=1, fails+=1               | dev 被唤醒；fails>=maxRounds → stuck
- *   verdict_pass      不变                             | 写人的收件箱（等判定）
- *   milestone_passed  round=1, fails=0                 | 清人的收件箱
+ *   fix_request       round+=1, fails+=1, 作废许可      | dev 被唤醒；fails>=maxRounds → stuck
+ *   verdict_pass      写下 awaitingHuman              | 写人的收件箱（等判定）
+ *   milestone_passed  round=1, fails=0, 消费许可       | 清人的收件箱
  *   escalation        不变                             | arch 被唤醒
  *   report            不变                             | 写人的收件箱
  *   stuck             不变                             | 写人的收件箱
+ *
+ * `awaitingHuman`（放行许可）的三个转换全在本表里，因为它必须是机械的：
+ * arch 拿不到写 state 的路，于是「人真的被问到了」不由放行者自证（D-01，见 gates/release.ts）。
  *
  * 阈值升级：同一 issue 累计 ≥3 轮 → 自动发 escalation。计数走 01-channel 的
  * `bumpCounters`（落盘，重启不丢）——「实现问题反复出现 = 疑似架构假设错了」，
@@ -56,6 +59,7 @@ export const FLOW: Record<MsgType, (ctx: FlowContext) => FlowResult> = {
       milestone: ctx.msg.milestone ?? "",
       round: 1,
       consecutiveFails: 0,
+      awaitingHuman: "", // 新里程碑开工：上一个的许可不能漏过来
       ...(hash !== undefined ? { assertionHash: hash } : {}),
     });
     return { wake: "dev" };
@@ -66,7 +70,8 @@ export const FLOW: Record<MsgType, (ctx: FlowContext) => FlowResult> = {
     const s = readState(ctx.root);
     const round = s.round + 1;
     const consecutiveFails = s.consecutiveFails + 1;
-    writeState(ctx.root, { round, consecutiveFails });
+    // 作废放行许可：FAIL 推翻了上一轮的 PASS，旧许可续用 = 凭已作废的验收放行
+    writeState(ctx.root, { round, consecutiveFails, awaitingHuman: "" });
 
     // 阈值升级：本次 fix_request 涉及的 issue id 计数，达到阈值 → escalation
     const ids = (ctx.msg.issues ?? []).map((i) => i.id);
@@ -79,9 +84,15 @@ export const FLOW: Record<MsgType, (ctx: FlowContext) => FlowResult> = {
     }
     return { wake: "dev", ...escalate };
   },
-  verdict_pass: () => noChange("human"),
+  verdict_pass(ctx) {
+    // 放行许可的**唯一**写入处：人真的被问到了。绑里程碑 id（不是布尔），
+    // 否则 M1 的许可能放行 M2。读它的是 G_release 的前置判据
+    writeState(ctx.root, { awaitingHuman: ctx.msg.milestone ?? "" });
+    return { wake: "human" };
+  },
   milestone_passed(ctx) {
-    writeState(ctx.root, { round: 1, consecutiveFails: 0 });
+    // 消费许可：一次许可一次放行（单向门不能重放）
+    writeState(ctx.root, { round: 1, consecutiveFails: 0, awaitingHuman: "" });
     // 表里写的「清人的收件箱」：放行后 verdict_pass 等判定消息作废，必须清（曾只 writeState，D-49 同形状）
     clearInbox(ctx.root, "human");
     return { wake: "arch" };

@@ -18,6 +18,23 @@ export type State = {
   round: number;
   maxRounds: number;
   consecutiveFails: number;
+  /**
+   * 等人判定的里程碑 id（空串 = 没有在等）。**放行的必要前置。**
+   *
+   * 为何存在这个字段：放行凭证（`evidence` 三段）是 arch 自己写的字符串，
+   * 而 D-01 要的是「判定完成的一方，其产出不被自己评判」——实测（2026-08-24）
+   * arch 在人从未参与的情况下捏满三段就放行成功。所以镀必须在 arch 写不到的地方：
+   * 本字段由 tester 发 `verdict_pass` 时由 FLOW **机械写入**（arch 的 LLM 只有
+   * `send_task` 一个工具，每个 type 都过拦截链，它没有写 state 的路）。
+   *
+   * 三个转换全在 07-adapter 的 FLOW（唯一状态机）：
+   *   verdict_pass     → 写下许可（= 人真的被问到了）
+   *   fix_request      → 作废（那一轮验收已被推翻，旧许可不能续用）
+   *   milestone_passed → 消费（一次许可一次放行，单向门不能重放）
+   *
+   * 存里程碑 id 而不是布尔：许可必须绑定到哪个里程碑，否则 M1 的许可能放行 M2。
+   */
+  awaitingHuman?: string;
   /** D-15 机制化的留位（当前只存不比对） */
   assertionHash?: string;
 };
@@ -27,6 +44,7 @@ const DEFAULTS: State = {
   round: 1,
   maxRounds: 5,
   consecutiveFails: 0,
+  awaitingHuman: "",
 };
 
 /**
