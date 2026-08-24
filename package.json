@@ -14,13 +14,14 @@
     "extensions": ["./extensions"]
   },
   "scripts": {
-    "pretest": "npm run check:disciplines && npm run check:testsize",
+    "pretest": "npm run check:disciplines && npm run check:testsize && npm run check:consensus",
     "test": "vitest --run",
     "verify:m1": "node tests/manual/M1-poll-fallback.mjs",
     "docs:protocol": "node scripts/docs-protocol.mjs",
     "test:watch": "vitest",
     "check:disciplines": "node scripts/check-disciplines.mjs",
     "check:testsize": "node scripts/check-testsize.mjs",
+    "check:consensus": "node scripts/check-consensus.mjs",
     "typecheck": "tsc --noEmit",
     "docs:progress": "node scripts/docs-progress.mjs",
     "wording:gates": "node scripts/gate-wording.mjs"

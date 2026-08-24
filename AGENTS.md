@@ -5,6 +5,7 @@
 ## 每次都读
 
 - [`docs/disciplines.md`](docs/disciplines.md) — 纪律台账，动手前读。拿到常驻机制的条目离开本读序，被拦时以机制输出为准（D-48）；已离开 D-41 / D-47
+- [`docs/consensus.md`](docs/consensus.md) — 设计共识（2026-08-24 grill 会话定）：为什么长这样。改设计前读，物化状态 ⏳ 的条目实现时顺手钉
 
 ## 按需
 
