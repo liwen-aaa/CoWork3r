@@ -66,7 +66,7 @@ export function registerCommands(role: WindowRole, pi: ExtensionAPI): void {
 
   // ── /research：未决表 [auto] 条目派查（08-dist 状态机）──
   pi.registerCommand("research", {
-    description: "未决表 [auto] 条目派查：/research 列出可查的，/research P2 派查",
+    description: "未决表 [auto] 条目：/research 列出、/research P2 派查、P2 done 结论||依据 标记已回、P2 fail 原因 回退",
     handler: async (args, ctx) => {
       const { cfg } = inspectConfig(ctx.cwd);
       if (!cfg) return;
@@ -81,6 +81,32 @@ export function registerCommands(role: WindowRole, pi: ExtensionAPI): void {
         return;
       }
       const clean = id.replace(/^--redo\s*/, "");
+      // finish 子命令（A11）：查完怎么回来——done 带结论||依据，fail 带原因。
+      // 曾只有 start，finish 有状态机实现而无命令层入口（/research 半个状态机）
+      const m = clean.match(/^(P\d+)\s+(done|fail)\s+(.+)$/s);
+      if (m) {
+        const [, pid, verb, rest] = m;
+        const rid = pid ?? "";
+        const rrest = rest ?? "";
+        const r =
+          verb === "done"
+            ? (() => {
+                const sep = rrest.indexOf("||");
+                const conclusion = (sep >= 0 ? rrest.slice(0, sep) : rrest).trim();
+                const evidence = (sep >= 0 ? rrest.slice(sep + 2) : "").trim();
+                return research({ root: ctx.cwd, rel: cfg.plan, id: rid, action: "finish", note: { conclusion, evidence } });
+              })()
+            : research({
+                root: ctx.cwd,
+                rel: cfg.plan,
+                id: rid,
+                action: "finish",
+                note: { conclusion: "", evidence: "" },
+                failReason: rrest.trim(),
+              });
+        ctx.ui.notify(r.ok ? `${pid} 已回` : r.reason, r.ok ? "info" : "error");
+        return;
+      }
       const r = research({ root: ctx.cwd, rel: cfg.plan, id: clean, action: "start" });
       ctx.ui.notify(r.ok ? `已派查 ${clean}（状态 → 查中）` : r.reason, r.ok ? "info" : "error");
     },
