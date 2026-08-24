@@ -5,7 +5,7 @@
  * 重启或水位标记异常时，它会被当成新任务重放。
  * 老仓库 2026-08-18 的缺陷修复：dev 的「快照错位」误判就是旧消息重放。
  */
-import { readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { channelPaths, deliver, watchInbox } from "../../src/channel/index.ts";
@@ -28,10 +28,10 @@ describe("C2 处理后清空", () => {
       deliver(root, msg, checkRoute);
 
       await waitFor(() => seen.length > 0, 5_000);
-      // 清空发生在 onMessage 返回之后，给一个轮询周期
-      await waitFor(() => readFileSync(p.inbox("dev"), "utf-8").trim() === "", 3_000);
+      // 清空发生在 onMessage 返回之后，给一个轮询周期；清空 = 删除文件（C2 与共识 #4）
+      await waitFor(() => !existsSync(p.inbox("dev")), 3_000);
 
-      expect(readFileSync(p.inbox("dev"), "utf-8").trim()).toBe("");
+      expect(existsSync(p.inbox("dev"))).toBe(false);
     } finally {
       stop();
       cleanup();

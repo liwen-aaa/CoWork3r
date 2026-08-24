@@ -6,8 +6,12 @@
  * **两半都是必需的**，而且这个结论是踩了才知道的（reuse.md）。
  *
  * `to` 不进比对：它在读入口已经校过（`msg.to !== role` 就不认）。
+ *
+ * 2026-08-24（共识 #4）：单槽位升级为锁后，「处理期间到达的新消息」由锁挡住
+ * （投递被拒，投递方重试），不再发生「覆盖 + 误清」。本文件改为验证锁 + 重试
+ * 流程：处理期间投递被拒 → 处理完清空（文件删除）→ 重试成功。
  */
-import { readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { channelPaths, deliver, watchInbox } from "../../src/channel/index.ts";
@@ -15,9 +19,10 @@ import { build, checkRoute } from "../../src/protocol/index.ts";
 import { makeRoot, sleep, waitFor } from "./_fixture.ts";
 
 describe("C2 条件清空", () => {
-  it("处理期间投递的新消息不被误清，且恰好处理一次", async () => {
+  it("处理期间投递 → 被锁拒 → 清空后重试成功，旧消息不重放", async () => {
     const { root, cleanup } = makeRoot("C2-cond");
     const rounds: number[] = [];
+    let blockedDuringProcessing = false;
     let firstDone = false;
 
     const stop = watchInbox(
@@ -27,8 +32,9 @@ describe("C2 条件清空", () => {
         rounds.push(m.round);
         if (!firstDone) {
           firstDone = true;
-          // 在 onMessage 执行期间投递第二条：round 不同，四字段比对应当判定「内容已变」
-          deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1", round: 4 }), checkRoute);
+          // 处理第一条期间投递第二条：锁应拒绝（round 3 还在收件箱）
+          const r = deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1", round: 4 }), checkRoute);
+          blockedDuringProcessing = !r.ok;
         }
       },
       { watch: null, pollMs: 200 },
@@ -37,15 +43,21 @@ describe("C2 条件清空", () => {
     try {
       deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1", round: 3 }), checkRoute);
 
-      await waitFor(() => rounds.includes(3) && rounds.includes(4), 8_000);
+      // 第一条被处理，处理期间的第二条投递被锁拒
+      await waitFor(() => rounds.includes(3), 8_000);
+      await sleep(300);
+      expect(blockedDuringProcessing).toBe(true);
+
+      // 处理完清空（文件删除）→ 锁释放 → 重试投递成功
+      await waitFor(() => !existsSync(channelPaths(root).inbox("dev")), 5_000);
+      const retry = deliver(root, build("task_assignment", "arch", { body: "通道层测试消息", milestone: "M1", round: 4 }), checkRoute);
+      expect(retry).toEqual({ ok: true });
+
+      await waitFor(() => rounds.includes(4), 8_000);
       // 再等两个周期，确认没有重放
       await sleep(600);
-
       expect(rounds.filter((r) => r === 3)).toHaveLength(1);
       expect(rounds.filter((r) => r === 4)).toHaveLength(1);
-
-      const p = channelPaths(root);
-      expect(readFileSync(p.inbox("dev"), "utf-8").trim()).toBe("");
     } finally {
       stop();
       cleanup();
