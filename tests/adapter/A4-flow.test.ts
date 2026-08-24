@@ -71,7 +71,7 @@ describe("A4 flow 状态表", () => {
       });
       FLOW.milestone_passed({
         root: p.root,
-        msg: build("milestone_passed", "tester", { milestone: "M1", evidence: "人已确认" }),
+        msg: build("milestone_passed", "arch", { milestone: "M1", evidence: "人原话:「M1 可以过」 arch 整理:已核对确认 确认:Y" }),
         milestone: m,
       });
       const s = readState(p.root);

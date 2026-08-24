@@ -168,12 +168,18 @@ describe("E1 完整一圈", () => {
       const human = peek(root, "human");
       expect(human?.type).toBe("verdict_pass");
 
-      // ── 6. 人 /pass → milestone_passed 回 arch，状态重置 ─────────
-      const passed = { type: "milestone_passed", milestone: "M1", evidence: "已对照断言逐条核对" };
-      expect(intercept.tester(passed)).toBeUndefined();
-      await send.tester(passed, root);
+      // ── 6. arch 代发 milestone_passed（人的放行经 arch 翻译 + 凭证三段），状态重置 ──
+      //（共识 ② 方案 A：from 改 arch；G_release 检查凭证三段缺一即 block）
+      const passed = {
+        type: "milestone_passed",
+        milestone: "M1",
+        evidence: "人原话:「M1 可以过」 arch 整理:已对照 M1 两条断言均通过 确认:Y",
+      };
+      expect(intercept.arch(passed)).toBeUndefined();
+      await send.arch(passed, root);
       await waitFor(() => arch.sent.some((s) => s.text.includes("milestone_passed")));
       expect(peek(root, "arch")).toBeNull();
+      expect(peek(root, "human")).toBeNull(); // 人的收件箱被清（flow 的表里有、实现曾只 writeState）
       const s2 = readState(root);
       expect(s2.consecutiveFails).toBe(0);
       expect(s2.round).toBe(1);
