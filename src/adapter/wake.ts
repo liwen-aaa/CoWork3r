@@ -28,6 +28,11 @@ export type WakeOptions = {
   ) => Stop;
   /** 唤醒日志口。缺省 console.log——触发源（catchup/event/poll）是人工观测点 */
   log?: (line: string) => void;
+  /**
+   * 一条消息处理完之后调一次（A12）。用于刷新常驼状态条：被唤醒 = 状态变了，
+   * 而本层拿不到 `ctx.ui`（它只有 root 与 role），所以由 wire 传闭包进来。
+   */
+  onHandled?: () => void;
 };
 
 export type WakeHandle = {
@@ -48,6 +53,7 @@ export function wireWake(role: Role, pi: ExtensionAPI, opts: WakeOptions = {}): 
           `wf: 收到 ${msg.type}（${msg.from} → ${role}${msg.milestone ? `，${msg.milestone}` : ""}）：\n${msg.body}`,
           { deliverAs: "followUp" },
         );
+        opts.onHandled?.(); // 状态条跟上（A12）：消息到了就是状态变了
       },
       {
         onWake: (source, msg) =>

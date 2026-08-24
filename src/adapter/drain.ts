@@ -38,6 +38,8 @@ export type DrainOptions = {
     onMessage: (msg: Message) => void,
     options: WatchOptions,
   ) => Stop;
+  /** 代排一条、且槽位已释放（C2 清空）之后调一次（A12）：状态条的「待你判定」要跟上 */
+  onHandled?: () => void;
 };
 
 export type DrainHandle = {
@@ -64,7 +66,13 @@ export function wireHumanDrain(
     const stop = (opts.watch ?? watchInbox)(
       cwd,
       "human",
-      (msg) => appendHumanLedger(cwd, msg),
+      (msg) => {
+        appendHumanLedger(cwd, msg);
+        // 刷新推到下一个 tick（A12）：此刻槽位还占着（C2 的清空在 onMessage 之后），
+        // 当场刷会把同一条待办数两遍（台账 + 槽位）——实测显示「待你判定：2 条」。
+        // 曾把 onHandled 当成 WatchOptions 往下传，watchInbox 不认它 → 静默丢弃（本轮实测抳到）。
+        if (opts.onHandled !== undefined) setTimeout(opts.onHandled, 0);
+      },
       {},
     );
     stops.set(cwd, stop);

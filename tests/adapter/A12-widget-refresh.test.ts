@@ -69,9 +69,9 @@ describe("A12 状态条随状态刷新", () => {
       const def = t.pi.tools.find((x) => x.name === "send_task")!.def as {
         execute: (...a: unknown[]) => Promise<unknown>;
       };
-      await def.execute("d", { type: "task_assignment", milestone: "M1", body: "去干" }, undefined, undefined, {
-        cwd: t.root,
-      });
+      // ctx 走 fakePi.toolCtx：真实 pi 给 execute 的是完整 ExtensionContext（带 ui.setWidget），
+      // 手拼 { cwd } 会与真实脉冲脱钩（D-25）——A12 第一版就因此误判「投递后不刷新」
+      await def.execute("d", { type: "task_assignment", milestone: "M1", body: "去干" }, undefined, undefined, t.pi.toolCtx(t.root));
 
       // 分发后 state 变了（milestone M1 + maxRounds 从 cfg 落盘）
       expect(readState(t.root).milestone).toBe("M1");
@@ -112,7 +112,11 @@ describe("A12 状态条随状态刷新", () => {
         questions: ["M1.5 报错读起来知道该怎么改吗"],
       });
       expect(deliver(t.root, v, checkRoute).ok).toBe(true);
-      await waitFor(() => (truth(t.root, "arch")).includes("待你判定"));
+      // 等产品行为本身（widget 内容），不等盘上 truth：deliver 写槽位那一刻 truth 就含
+      // 「待你判定」（status.ts humanPending 把槽位消息计入），而 drain 是 pollMs 40 的
+      // 异步 watcher——等 truth 会在刷新发生前通过。判据声明（widget == 当前输出）被
+      // 跳过 = 同形状第四次（文件头 A9c/A4/A9f 三次）
+      await waitFor(() => widgetNow(t.pi).includes("待你判定") && widgetNow(t.pi).includes("wf/human-pending.md"));
 
       // 判据：台账有待办 → 状态条必须出现「待你判定」+ 指路（人在真跑里就是这里卡住的）
       const w = widgetNow(t.pi);

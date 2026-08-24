@@ -175,6 +175,26 @@ export function fakePi() {
     wake(type: string, payload: unknown, ctx: { cwd: string }): unknown {
       return this.emit(type, payload, ctx);
     },
+    /**
+     * 工具 `execute` 拿到的 ctx。
+     *
+     * 真实 pi 给的是**完整的** `ExtensionContext`（`types.d.ts:371`：
+     * `execute(id, params, signal, onUpdate, ctx: ExtensionContext)`），带 `ui.setWidget`
+     * 与 `mode`。测试里直调 execute 时手拼 `{ cwd }` 就与真实脉冲脱钩（D-25）：
+     * A12 第一版就因此误判「投递后不刷新」，而实际上是 ctx 里根本没 ui。
+     * 所以统一从这里取，与 emit 的 safeCtx 同形状。
+     */
+    toolCtx(cwd: string, mode: "tui" | "print" | "rpc" | "json" = "tui") {
+      return {
+        cwd,
+        mode,
+        getSystemPrompt: () => "",
+        ui: {
+          setWidget: (name: string, lines: string[]) => widgets.push({ name, lines }),
+          notify: () => undefined,
+        },
+      };
+    },
     handlers,
     tools,
     commands,

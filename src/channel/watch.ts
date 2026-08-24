@@ -57,6 +57,15 @@ export type WatchOptions = {
    * 而噪声会训练人忽略日志。
    */
   onWake?: (source: "catchup" | "event" | "poll", msg: Message) => void;
+  /**
+   * 处理完回调（C2 清空之后触发一次，与 onWake 对称的收尾端）。
+   *
+   * 为什么不能挂在 onMessage 里：drain 代排后状态条刷新时，human 槽位还在
+   * （C2 的 clearIfSame 在 onMessage 返回后才跑），同一条待办会被数两遍——
+   * 台账一条 + 槽位一条（A12 实测「待你判定：2 条」vs truth「1 条」）。
+   * 「处理完」的定义 = onMessage 返回且槽位已释放。
+   */
+  onHandled?: (msg: Message) => void;
 };
 
 const defaultWatch = (dir: string, onChange: (filename: string | null) => void): Watcher =>
@@ -83,6 +92,7 @@ export function watchInbox(
     catchupMs = 500,
     onWarn = (m: string) => console.warn(m),
     onWake,
+    onHandled,
   } = options;
 
   const p = channelPaths(root);
@@ -157,6 +167,11 @@ export function watchInbox(
     } catch (e) {
       onWarn(`[channel] 清空收件箱失败（${role}）：${String(e)}`);
     }
+
+    // 收尾端（onWake 的镜像）：C2 清空后才算「处理完」。挂在 onMessage 内的
+    // 刷新会在槽位还占着时读数（A12 实测「待你判定：2 条」）。真跑里 C2 之后
+    // 没有别的入口事件，漏在这里 = 状态条停在双计直到下一次投递。
+    onHandled?.(msg);
   };
 
   const timers: NodeJS.Timeout[] = [];
