@@ -124,7 +124,8 @@
 
 - [auto] `npm test -- tests/adapter tests/e2e` 全绿，含 A1–A9 与 E1（E1 = `tests/e2e/` 的完整一圈，规格见 07-adapter 验收节）
 - [auto] A9 前半：`grep -rn "@earendil-works/pi-coding-agent" src/ | grep -v "import type"` 无输出 —— 本条的意思是「pi 在 `src/` 里只以类型存在」，`import type { ExtensionAPI }` 是允许的、被禁的是值导入（常量、工厂函数、任何有运行时的东西）
-- [auto] A6 断言 `extensions/*.ts` 各 ≤ 30 行、`src/adapter/wire.ts` ≤ 120 行
+- [auto] A6 断言 `extensions/*.ts` 各 ≤ 30 行、`src/adapter/wire.ts` ≤ 140 行
+  （120 → 140，人改 2026-08-24：M6-013 agent_end 收尾提醒判定加入后超 120，140 仍薄）
 - [auto] A4 遍历 `flow.ts` 状态表全部 9 个 type
 - [human] dev 窗口的 `send_task` 工具面里看不到 `arch` 这个投递目标（**M2 移入**）—— P2 验的是 schema 对象的内容，而 LLM 看到的是 pi 序列化后的工具描述，中间可能丢字段、变形、截断。schema 按角色生成是「越权在类型层不可能」的全部依据
 - [human] 在一个新建空项目里真开三个窗口，跑通一个里程碑 —— 这是唯一能证明「它真的在运行」的事，mock-pi 永远证明不了

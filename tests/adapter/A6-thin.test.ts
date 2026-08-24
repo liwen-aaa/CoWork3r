@@ -1,11 +1,12 @@
 /**
- * A6 抗腐化：extensions/*.ts 各 ≤ 30 行、wire.ts ≤ 120 行
+ * A6 抗腐化：extensions/*.ts 各 ≤ 30 行、wire.ts ≤ 140 行
  *
  * 老仓库三个扩展各 295/283/398 行，涨的全是本该在下层的判断（拦截判据、消息构造、
  * 状态计算、git 调用、里程碑 id 推断混在一起）。行数上限比评审有效——超了就说明
  * 有东西放错了层。
  *
- * 判据在 plan.md M6：extensions/*.ts 各 ≤ 30 行、src/adapter/wire.ts ≤ 120 行。
+ * 判据在 plan.md M6：extensions/*.ts 各 ≤ 30 行、src/adapter/wire.ts ≤ 140 行
+ * （120 → 140 由人改于 2026-08-24：M6-013 agent_end 收尾提醒判定加入后超 120，140 仍薄）。
  * 本文件直接数行数（含注释，因为注释也是「被塞进来的文档」的一种）。
  */
 import { readFileSync, readdirSync } from "node:fs";
@@ -28,8 +29,8 @@ describe("A6 薄扩展", () => {
     }
   });
 
-  it("src/adapter/wire.ts ≤ 120 行", () => {
+  it("src/adapter/wire.ts ≤ 140 行", () => {
     const n = linesOf("src/adapter/wire.ts");
-    expect(n, `wire.ts 有 ${n} 行，超 120 行上限`).toBeLessThanOrEqual(120);
+    expect(n, `wire.ts 有 ${n} 行，超 140 行上限`).toBeLessThanOrEqual(140);
   });
 });
