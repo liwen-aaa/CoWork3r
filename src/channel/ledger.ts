@@ -12,7 +12,10 @@
  *
  * 只增不改（appendTextAtomic）：覆盖一条就是一件待办静默消失。
  */
+import { readFileSync } from "node:fs";
+
 import { appendTextAtomic } from "./atomic.ts";
+import { peek } from "./inbox.ts";
 import { channelPaths } from "./paths.ts";
 import type { Message } from "../protocol/message.ts";
 
@@ -43,4 +46,39 @@ function render(msg: Message): string {
 
 export function appendHumanLedger(root: string, msg: Message): void {
   appendTextAtomic(channelPaths(root).humanLedger, render(msg), HEADER);
+}
+
+/**
+ * 还没回答的待判定项（给 `/status` 数条数、给 `/pending` 打印内容）。
+ *
+ * 两个来源都要算：
+ *   **台账**里未勾选的 `- [ ]`（arch 已代排的）
+ *   **槽位**里那条（窗口关着时到的，还没被代排——只读台账会漏掉它）
+ *
+ * 返回原文行而不是结构体：这些字符串是 tester 从 `[human]` 断言里原样抄来的
+ * 问题，人要读的就是它（D-21：`[human]` 是人的原话，不由 AI 归纳）。
+ * 再解析一遍等于给它加一层转述。
+ */
+export function humanPendingItems(root: string): { lines: string[]; ledgerRel: string } {
+  const out: string[] = [];
+
+  // 台账：未勾选的条目，连同它所属的 `## <里程碑> <type>` 标题一起给（人要知道这是哪一轮的）
+  try {
+    const text = readFileSync(channelPaths(root).humanLedger, "utf-8");
+    let head = "";
+    for (const line of text.split("\n")) {
+      if (line.startsWith("## ")) head = line.slice(3).trim();
+      if (line.startsWith("- [ ] ")) out.push(`${head ? `【${head}】 ` : ""}${line.slice(6).trim()}`);
+    }
+  } catch {
+    /* 台账还不存在 = 没有代排过 = 没有台账侧的待办 */
+  }
+
+  // 槽位：还没被代排的那条（arch 窗口没开的那段时间到的消息）
+  const inSlot = peek(root, "human");
+  for (const q of inSlot?.questions ?? []) {
+    out.push(`【${[inSlot?.milestone, inSlot?.type].filter(Boolean).join(" ")}｜未代排】 ${q}`);
+  }
+
+  return { lines: out, ledgerRel: "wf/human-pending.md" };
 }
