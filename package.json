@@ -14,7 +14,7 @@
     "extensions": ["./extensions"]
   },
   "scripts": {
-    "pretest": "npm run check:disciplines && npm run check:testsize && npm run check:consensus",
+    "pretest": "npm run check:disciplines && npm run check:testsize && npm run check:consensus && npm run check:vocab && npm run check:wiring",
     "test": "vitest --run",
     "verify:m1": "node tests/manual/M1-poll-fallback.mjs",
     "docs:protocol": "node scripts/docs-protocol.mjs",
@@ -22,6 +22,8 @@
     "check:disciplines": "node scripts/check-disciplines.mjs",
     "check:testsize": "node scripts/check-testsize.mjs",
     "check:consensus": "node scripts/check-consensus.mjs",
+    "check:vocab": "node scripts/check-vocab.mjs",
+    "check:wiring": "node scripts/check-wiring.mjs",
     "typecheck": "tsc --noEmit",
     "docs:progress": "node scripts/docs-progress.mjs",
     "wording:gates": "node scripts/gate-wording.mjs"
