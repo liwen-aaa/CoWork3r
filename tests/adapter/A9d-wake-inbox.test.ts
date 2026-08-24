@@ -38,12 +38,7 @@ describe("A9d 唤醒链路", () => {
     // 注入窄参数的真实 watchInbox（C1 同款：watch: null + 小 pollMs）。
     // 消息仍走真实 deliver 落盘——只把时序压小让测试跑得快
     const watch = (root: string, r: Role, onMessage: (m: Message) => void, o: WatchOptions): Stop => {
-      const inner = watchInbox(root, r, onMessage, {
-        watch: null,
-        pollMs: 40,
-        catchupMs: 20,
-        ...(o.onWake ? { onWake: o.onWake } : {}),
-      });
+      const inner = watchInbox(root, r, onMessage, { ...o, watch: null, pollMs: 40, catchupMs: 20 });
       return () => {
         stopped.push({ role: r, at: stopped.length });
         inner();

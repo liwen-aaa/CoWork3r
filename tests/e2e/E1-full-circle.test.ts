@@ -64,7 +64,7 @@ describe("E1 完整一圈", () => {
       // 唤醒接线（M6-010）：消息落盘 → 窗口被唤醒。注入窄参数的真实 watchInbox
       // （C1 同款：watch: null + 小 pollMs），消息走真实 deliver 落盘（D-25）
       const watch = (root: string, role: Role, onMessage: (m: Message) => void, o: WatchOptions): Stop =>
-        watchInbox(root, role, onMessage, { watch: null, pollMs: 40, catchupMs: 20, ...(o.onWake ? { onWake: o.onWake } : {}) });
+        watchInbox(root, role, onMessage, { ...o, watch: null, pollMs: 40, catchupMs: 20 });
       stops.push(
         wire("arch", arch as never, { watch }),
         wire("dev", dev as never, { watch }),

@@ -30,13 +30,13 @@ import { build, checkRoute } from "../../src/protocol/index.ts";
 import type { Message, Role } from "../../src/protocol/index.ts";
 import { fakePi, installPlan, makeProject, realConfig, waitFor } from "./_fixture.ts";
 
+/**
+ * 注入窄参数的真实 watchInbox（C1 同款：watch: null + 小 pollMs）。
+ * **透传 o 的全部字段**——只挑 onWake 会把 onHandled 吃掉，而那正是状态条刷新的入口
+ * （本轮实测：挑字段的注入器让 A12 代排那条假红）。注入缝漏字段与产品漏接线同形状。
+ */
 const fastWatch = (root: string, r: Role, onMessage: (m: Message) => void, o: WatchOptions): Stop =>
-  watchInbox(root, r, onMessage, {
-    watch: null,
-    pollMs: 40,
-    catchupMs: 20,
-    ...(o.onWake ? { onWake: o.onWake } : {}),
-  });
+  watchInbox(root, r, onMessage, { ...o, watch: null, pollMs: 40, catchupMs: 20 });
 
 /** 状态条当前显示的内容（fakePi 记录了每次 setWidget，取最后一次） */
 function widgetNow(pi: ReturnType<typeof fakePi>): string {

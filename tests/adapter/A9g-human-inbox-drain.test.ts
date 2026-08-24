@@ -34,12 +34,7 @@ import { fakePi, installPlan, makeProject, realConfig, waitFor } from "./_fixtur
 
 /** 注入窄参数的真实 watchInbox（C1/A9d 同款）：消息仍走真实 deliver 落盘（D-25） */
 const fastWatch = (root: string, r: Role, onMessage: (m: Message) => void, o: WatchOptions): Stop =>
-  watchInbox(root, r, onMessage, {
-    watch: null,
-    pollMs: 40,
-    catchupMs: 20,
-    ...(o.onWake ? { onWake: o.onWake } : {}),
-  });
+  watchInbox(root, r, onMessage, { ...o, watch: null, pollMs: 40, catchupMs: 20 });
 
 function setup(role: "arch" | "dev" | "tester", label: string) {
   const p = makeProject(label);

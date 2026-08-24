@@ -66,14 +66,11 @@ export function wireHumanDrain(
     const stop = (opts.watch ?? watchInbox)(
       cwd,
       "human",
-      (msg) => {
-        appendHumanLedger(cwd, msg);
-        // 刷新推到下一个 tick（A12）：此刻槽位还占着（C2 的清空在 onMessage 之后），
-        // 当场刷会把同一条待办数两遍（台账 + 槽位）——实测显示「待你判定：2 条」。
-        // 曾把 onHandled 当成 WatchOptions 往下传，watchInbox 不认它 → 静默丢弃（本轮实测抳到）。
-        if (opts.onHandled !== undefined) setTimeout(opts.onHandled, 0);
-      },
-      {},
+      (msg) => appendHumanLedger(cwd, msg),
+      // 刷新挂在 watch 层的 onHandled（C2 清空之后），不挂 onMessage 内：
+      // 那一刻槽位还占着，同一条待办会被数两遍（台账 + 槽位，A12 实测 2 条）。
+      // 曾把 onHandled 当成参数往下传而 watchInbox 那时不认它 → 静默丢弃（本轮实测抳到）。
+      opts.onHandled === undefined ? {} : { onHandled: () => opts.onHandled?.() },
     );
     stops.set(cwd, stop);
   };
