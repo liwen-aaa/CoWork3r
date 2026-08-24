@@ -14,7 +14,7 @@
  */
 import { readFileSync } from "node:fs";
 
-import { appendTextAtomic } from "./atomic.ts";
+import { appendTextAtomic, writeTextAtomic } from "./atomic.ts";
 import { peek } from "./inbox.ts";
 import { channelPaths } from "./paths.ts";
 import type { Message } from "../protocol/message.ts";
@@ -81,4 +81,42 @@ export function humanPendingItems(root: string): { lines: string[]; ledgerRel: s
   }
 
   return { lines: out, ledgerRel: "wf/human-pending.md" };
+}
+
+/**
+ * 勾掉某里程碑的待办（`- [ ]` → `- [x]`）。放行时调。
+ *
+ * **勾选不是删除。** D-34（物理删除归人）曾被读成「台账一律不动」，于是真跑里
+ * M1 放行之后那条已答的问题还在 `/pending` 里——跑十个里程碑就积十条假待办，
+ * 而台账存在的全部意义是「不看就会漏的东西在视线里」（D-30）。
+ * 本函数**不删一个字**，只改勾选框：历史仍在，D-34 守的那一面没破。
+ *
+ * 归属靠段标题（`## <里程碑> <type>（…）`）判定：放行 M1 不能带走 M2 的待办。
+ * 幂等：已勾的不再动，无变化时不写盘（避开无意义的 mtime 变动）。
+ */
+export function resolveHumanPending(root: string, milestoneId: string): boolean {
+  const file = channelPaths(root).humanLedger;
+  let text: string;
+  try {
+    text = readFileSync(file, "utf-8");
+  } catch {
+    return false; // 没台账 = 没人工关卡走过，不是错
+  }
+
+  let head = "";
+  let changed = false;
+  const out = text.split("\n").map((line) => {
+    if (line.startsWith("## ")) head = line.slice(3).trim();
+    // 段标题以 `<里程碑> ` 开头（render 的格式）；带边界避开 M1 误匹 M11
+    const mine = new RegExp(`^${milestoneId}(?![0-9A-Za-z])`).test(head);
+    if (mine && line.startsWith("- [ ] ")) {
+      changed = true;
+      return `- [x] ${line.slice(6)}`;
+    }
+    return line;
+  });
+
+  if (!changed) return false;
+  writeTextAtomic(file, out.join("\n"));
+  return true;
 }

@@ -27,7 +27,7 @@
  * （02-protocol），本层只推进状态与返回「下一步该干什么」的信号。
  */
 import type { Message, MsgType } from "../protocol/message.ts";
-import { bumpCounters, clearInbox, readState, writeState } from "../channel/index.ts";
+import { bumpCounters, clearInbox, readState, resolveHumanPending, writeState } from "../channel/index.ts";
 import { assertionHash } from "../plan/index.ts";
 import type { Milestone } from "../plan/index.ts";
 
@@ -106,6 +106,9 @@ export const FLOW: Record<MsgType, (ctx: FlowContext) => FlowResult> = {
     writeState(ctx.root, { round: 1, consecutiveFails: 0, awaitingHuman: "" });
     // 表里写的「清人的收件箱」：放行后 verdict_pass 等判定消息作废，必须清（曾只 writeState，D-49 同形状）
     clearInbox(ctx.root, "human");
+    // 台账里那条已答的问题勾掉（A14）：清槽位不等于结掉待办——真跑里 M1 放行后
+    // /pending 仍列出 M1.5。勾选不是删除（D-34 守的是不删内容），是状态推进
+    resolveHumanPending(ctx.root, ctx.msg.milestone ?? "");
     return { wake: "arch" };
   },
   escalation: () => noChange("arch"),
