@@ -163,6 +163,7 @@ export function fakePi() {
         getSystemPrompt: () => "",
         ui: {
           setWidget: (name: string, lines: string[]) => widgets.push({ name, lines }),
+          notify: () => undefined, // 命令 handler 的输出口（/status 等）；断言看 research 的副作用而非弹窗
         },
         ...ctx,
       };
