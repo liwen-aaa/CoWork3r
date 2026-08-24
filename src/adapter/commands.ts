@@ -43,38 +43,6 @@ export function registerCommands(role: WindowRole, pi: ExtensionAPI): void {
     },
   });
 
-  // ── /pass：tester 人工放行（凭证必填，02-protocol 层也拦）──
-  pi.registerCommand("pass", {
-    description: "（tester）人工放行：附上你验了什么",
-    handler: async (args, ctx) => {
-      if (!args || args.trim() === "") {
-        ctx.ui.notify("/pass 需要凭证：你验证了什么？", "error");
-        return;
-      }
-      const { cfg } = inspectConfig(ctx.cwd);
-      if (!cfg) return;
-      const parsed = parsePlan(ctx.cwd, cfg.plan);
-      if (!parsed.ok) return;
-      const st = readState(ctx.cwd);
-      const m = milestone(parsed.plan, st.milestone);
-      if (!m) return;
-      // 凭证写进 wf/ 供 arch 读；实际 milestone_passed 由 tester 窗口发
-      ctx.ui.notify(`放行记录：M${m.id} —— ${args}`, "info");
-    },
-  });
-
-  // ── /fail：tester 驳回（带原因回 dev）──
-  pi.registerCommand("fail", {
-    description: "（tester）人工驳回：附上原因",
-    handler: async (args, ctx) => {
-      if (!args || args.trim() === "") {
-        ctx.ui.notify("/fail 需要原因", "error");
-        return;
-      }
-      ctx.ui.notify(`驳回记录：${args}`, "info");
-    },
-  });
-
   // ── /role：打印当前规约（补 /skill:name 的缺）──
   pi.registerCommand("role", {
     description: "打印当前角色规约",

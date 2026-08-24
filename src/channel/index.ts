@@ -28,7 +28,7 @@
  */
 export { writeJsonAtomic, writeTextAtomic } from "./atomic.ts";
 export { bumpCounters } from "./counters.ts";
-export { clearIfSame, deliver, peek } from "./inbox.ts";
+export { clearIfSame, clearInbox, deliver, peek } from "./inbox.ts";
 export { channelPaths } from "./paths.ts";
 export { readState, writeState } from "./state.ts";
 export { watchInbox } from "./watch.ts";

@@ -85,3 +85,20 @@ export function clearIfSame(root: string, role: Role, msg: Message): boolean {
     return false;
   }
 }
+
+/**
+ * 无条件清空某角色的收件箱（删除文件 = 释放单槽位锁）。
+ *
+ * 与 clearIfSame 的分工：clearIfSame 比对四字段（防误删处理期间新消息），
+ * 用于窗口消费路径；clearInbox 无条件删，用于「流程语义上该清了」的路径——
+ * milestone_passed 放行后清 human 收件箱（flow 的表里写了、实现曾只 writeState）。
+ */
+export function clearInbox(root: string, role: Role): boolean {
+  const file = channelPaths(root).inbox(role);
+  try {
+    if (existsSync(file)) unlinkSync(file);
+    return true;
+  } catch {
+    return false;
+  }
+}

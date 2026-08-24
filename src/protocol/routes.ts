@@ -48,10 +48,10 @@ export const ROUTES = {
     description: "自动验证通过，等人答 [human] 断言",
   },
   milestone_passed: {
-    from: "tester",
+    from: "arch",
     to: "arch",
     requires: ["milestone", "evidence"],
-    description: "人工放行，通知 arch 收尾/下一里程碑",
+    description: "(人的代理)人工放行，进入收尾/下一里程碑",
   },
   escalation: {
     from: "tester",

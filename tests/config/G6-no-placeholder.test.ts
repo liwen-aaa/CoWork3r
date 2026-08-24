@@ -25,13 +25,13 @@ const PLACEHOLDER = /<[A-Z][A-Z_]{1,}>/g;
 
 describe("G6 规约零占位符", () => {
   it("三份规约文件存在（拆自行数断言：文件缺失与内容超标红因不同）", () => {
-    const files = readdirSync(ROLES_DIR).filter((f) => f.endsWith(".md"));
+    const files = readdirSync(ROLES_DIR).filter((f) => f.endsWith(".md") && f !== "human.md");
     expect(files.sort()).toEqual(["arch.md", "dev.md", "tester.md"]);
   });
 
   it("每份规约 ≤ 40 行（老仓库三份 SKILL 是 72/81/89）", () => {
     const over: string[] = [];
-    for (const f of readdirSync(ROLES_DIR).filter((n) => n.endsWith(".md"))) {
+    for (const f of readdirSync(ROLES_DIR).filter((n) => n.endsWith(".md") && n !== "human.md")) {
       const lines = readFileSync(join(ROLES_DIR, f), "utf-8").split(/\r?\n/).length;
       if (lines > 40) over.push(`${f}: ${lines} 行`);
     }

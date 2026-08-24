@@ -36,6 +36,7 @@
 import { fatalReason } from "../config/index.ts";
 import { checkDevOutput, checkTestReport } from "./artifact.ts";
 import { checkHumanQuestions } from "./human-questions.ts";
+import { checkRelease } from "./release.ts";
 import { G_plan } from "./plan-ready.ts";
 import { G_command, commandGateStatus } from "./run-command.ts";
 import { G_source, takeSourceBaseline } from "./source-changed.ts";
@@ -44,6 +45,7 @@ import type { Diagnostic } from "../config/index.ts";
 
 export { checkDevOutput, checkTestReport } from "./artifact.ts";
 export { checkHumanQuestions } from "./human-questions.ts";
+export { checkRelease } from "./release.ts";
 export { G_plan } from "./plan-ready.ts";
 export { G_command, commandGateStatus } from "./run-command.ts";
 export { G_source, takeSourceBaseline } from "./source-changed.ts";
@@ -124,22 +126,30 @@ const G_human_chained: Gate = (ctx) => {
 };
 Object.defineProperty(G_human_chained, "name", { value: "G_human" });
 
-export { G_command_chained, G_human_chained, G_plan_chained, G_source_chained };
+/** G_release 适配成统一签名：evidence 从 input 里取 */
+const G_release_chained: Gate = (ctx) => {
+  const ev = typeof ctx.input.evidence === "string" ? ctx.input.evidence : "";
+  return checkRelease(ev);
+};
+Object.defineProperty(G_release_chained, "name", { value: "G_release" });
+
+export { G_command_chained, G_human_chained, G_plan_chained, G_release_chained, G_source_chained };
 
 /**
  * 键是 `role:type`，与 ROUTES 同构。tester 不嵌套——查表写错的代价高于嵌套省下的几行。
  *
- * 空数组是**声明**，不是遗漏：arch:report 是纯通报，milestone_passed / escalation /
- * stuck 的把关在别处（协议层必填字段 + configGate）。
+ * 空数组是**声明**，不是遗漏：arch:report 是纯通报，escalation / stuck 的
+ * 把关在别处（协议层必填字段 + configGate）。milestone_passed 由 arch 代发
+ * （共识 ② 方案 A），链上挂 G_release——D-01 的最后一米是 gate 不是规约。
  */
 export const CHAINS: Record<string, readonly Gate[]> = {
   "arch:task_assignment": [G_plan_chained],
   "arch:verification": [G_plan_chained],
   "arch:report": [],
+  "arch:milestone_passed": [G_release_chained],
   "dev:review_request": [G_artifact_dev, G_source_chained],
   "tester:fix_request": [G_artifact_report],
   "tester:verdict_pass": [G_artifact_report, G_command_chained, G_human_chained],
-  "tester:milestone_passed": [],
   "tester:escalation": [],
   "tester:stuck": [],
 };

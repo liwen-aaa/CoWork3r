@@ -24,7 +24,7 @@
  * （02-protocol），本层只推进状态与返回「下一步该干什么」的信号。
  */
 import type { Message, MsgType } from "../protocol/message.ts";
-import { bumpCounters, readState, writeState } from "../channel/index.ts";
+import { bumpCounters, clearInbox, readState, writeState } from "../channel/index.ts";
 import { assertionHash } from "../plan/index.ts";
 import type { Milestone } from "../plan/index.ts";
 
@@ -82,6 +82,8 @@ export const FLOW: Record<MsgType, (ctx: FlowContext) => FlowResult> = {
   verdict_pass: () => noChange("human"),
   milestone_passed(ctx) {
     writeState(ctx.root, { round: 1, consecutiveFails: 0 });
+    // 表里写的「清人的收件箱」：放行后 verdict_pass 等判定消息作废，必须清（曾只 writeState，D-49 同形状）
+    clearInbox(ctx.root, "human");
     return { wake: "arch" };
   },
   escalation: () => noChange("arch"),
