@@ -17,7 +17,7 @@ import { readFileSync } from "node:fs";
 
 import type { Config } from "../config/index.ts";
 import type { State } from "../channel/index.ts";
-import { humanPendingItems, readState } from "../channel/index.ts";
+import { channelPaths, readState } from "../channel/index.ts";
 import { frontier, milestone, parsePlan } from "../plan/index.ts";
 import type { Plan, Milestone } from "../plan/index.ts";
 import { commandGateStatus } from "../gates/index.ts";
@@ -45,14 +45,38 @@ export type BootContext = {
  * 此时消息在槽位里还没进台账，不算就是漏报。
  */
 function humanPending(root: string): string | null {
-  // 数条数与 `/pending` 列内容用**同一份** `humanPendingItems`（D-04）——曾各数一遍：
-  // 本文件数「台账未勾选数 + 槽位算 1 条」，ledger 数「每个 question 各一条」。
-  // 两个数字不一致时人会以为丢了事；取 ledger 那份（人要回答的是问题，不是消息）。
-  const { lines, ledgerRel } = humanPendingItems(root);
-  if (lines.length === 0) return null;
-  return `${lines.length} 条（见 ${ledgerRel}，或跑 /pending 看原文）`;
+  const unchecked = countUnchecked(root);
+  const inSlot = slotPending(root);
+  const total = unchecked + (inSlot === null ? 0 : 1);
+  if (total === 0) return null;
+  const where = unchecked > 0 ? `（见 ${relLedger()}）` : "";
+  return `${total} 条${inSlot === null ? "" : `，最新：${inSlot}`}${where}`;
 }
 
+/** 台账里未勾选的条目数（`- [ ]`）。文件不存在 = 0 */
+function countUnchecked(root: string): number {
+  try {
+    const text = readFileSync(channelPaths(root).humanLedger, "utf-8");
+    return (text.match(/^- \[ \]/gm) ?? []).length;
+  } catch {
+    return 0;
+  }
+}
+
+function relLedger(): string {
+  return "wf/human-pending.md";
+}
+
+function slotPending(root: string): string | null {
+  try {
+    const raw = readFileSync(channelPaths(root).inbox("human"), "utf-8").trim();
+    if (raw === "") return null;
+    const msg = JSON.parse(raw) as { type?: string; milestone?: string };
+    return msg.type ? `${msg.milestone ?? ""} ${msg.type}`.trim() : null;
+  } catch {
+    return null; // 没有待人工 = 不显示这行
+  }
+}
 
 export function bootBriefing(ctx: BootContext): string {
   const lines: string[] = [];

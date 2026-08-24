@@ -11,7 +11,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { inspectConfig } from "../config/index.ts";
 import { parsePlan, milestone, checkMilestone, frontier } from "../plan/index.ts";
-import { humanPendingItems, readState } from "../channel/index.ts";
+import { readState } from "../channel/index.ts";
 import { briefingFor } from "./status.ts";
 import { research } from "../dist/research.ts";
 import { loadRoleSpec } from "../roles/index.ts";
@@ -28,24 +28,6 @@ export function registerCommands(role: WindowRole, pi: ExtensionAPI): void {
         return;
       }
       ctx.ui.notify(text, "info");
-    },
-  });
-
-  // ── /pending：把待判定项的**内容**打印出来（A13）──
-  // /status 只给条数与位置（「待你判定：1 条（见 wf/human-pending.md）」），
-  // 而真跑里人两次问的是内容在哪——共识 ② 说人只做看/说/确认，开编辑器不在三件里。
-  pi.registerCommand("pending", {
-    description: "列出等你判定的问题（原文，不用去开文件）",
-    handler: async (_args, ctx) => {
-      const { lines, ledgerRel } = humanPendingItems(ctx.cwd);
-      if (lines.length === 0) {
-        ctx.ui.notify("没有等你判定的事。", "info");
-        return;
-      }
-      ctx.ui.notify(
-        [`等你判定 ${lines.length} 条（台账：${ledgerRel}）：`, ...lines.map((l, i) => `${i + 1}. ${l}`)].join("\n"),
-        "info",
-      );
     },
   });
 
