@@ -37,7 +37,7 @@
 
 - 共识:gate 在 LLM 投递时拦,当场收 reason 改;装在事后位置(CI/脚本)是「产物已落盘才红」
 - 拒绝:提示词拦截(D-02 判死刑);事后脚本(返工)
-- 物化:✅ `src/adapter/wire.ts`(拦截链在 tool_call);⏳ export 调用点检查脚本(照出 takeSourceBaseline/configGate/chainFor/commandGateStatus/research.finish/validate 六处)
+- 物化:✅ `src/adapter/wire.ts`(拦截链在 tool_call + configGate/chainFor/takeSourceBaseline 接线);✅ `scripts/check-wiring.mjs`(D-49,首跑照出 5 哑弹:configGate/chainFor/commandGateStatus/takeSourceBaseline/validate,2026-08-24 全部清零)
 
 ## 6. 断言二分判据升级
 
