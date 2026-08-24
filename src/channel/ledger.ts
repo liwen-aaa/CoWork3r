@@ -37,7 +37,8 @@ function render(msg: Message): string {
   for (const q of msg.questions ?? []) lines.push(`- [ ] ${q}`);
   if ((msg.questions ?? []).length > 0) lines.push("");
   if (msg.artifact !== undefined && msg.artifact !== "") lines.push(`产出：\`${msg.artifact}\``, "");
-  return lines.join("\n");
+  // 每段以空行收尾：追加语义下少这一行，下一条的 `##` 会贴到上一条尾巴上
+  return `${lines.join("\n").trimEnd()}\n\n`;
 }
 
 export function appendHumanLedger(root: string, msg: Message): void {

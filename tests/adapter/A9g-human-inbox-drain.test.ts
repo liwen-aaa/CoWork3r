@@ -19,7 +19,8 @@
  *   ① arch session_start 后：投一条给 human 的消息 → 槽位被排空
  *   ② 排空后同方向第二条能投进去（锁真的释放了 = 上面那三个后果都解掉）
  *   ③ 排空的消息进 wf/ 台账（D-30：不看就会漏的东西必须留下来）
- *   ④ 只有 arch 排空：dev / tester 窗口不碰 human 槽位（越权与噪音）
+ *   ④ 多条追加排版不糊（台账给人读，排版坏了不会有任何红——静默变形）
+ *   ⑤ 只有 arch 排空：dev / tester 窗口不碰 human 槽位（越权与噪音）
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -104,6 +105,26 @@ describe("A9g 人的收件箱有消费者", () => {
       expect(text).toContain("M1");
       // 人要能直接回答，所以 [human] 断言的问题原文必须留在台账里
       expect(text).toContain("M1.2");
+    } finally {
+      stopAll();
+      cleanup();
+    }
+  });
+
+  it("多条追加不糊在一起（台账是给人读的，排版坏了无任何红）", async () => {
+    const { root, stopAll, cleanup } = setup("arch", "a9g-fmt");
+    try {
+      expect(verdict(root).ok).toBe(true);
+      await waitFor(() => peek(root, "human") === null);
+      expect(
+        deliver(root, build("stuck", "tester", { milestone: "M1", body: "卡住请人介入" }), checkRoute).ok,
+      ).toBe(true);
+      await waitFor(() => peek(root, "human") === null);
+
+      const text = readFileSync(channelPaths(root).humanLedger, "utf-8");
+      // 每条一个 `##` 段，且段前必须有空行——追加语义下少一行就糊在上一条尾巴上
+      expect((text.match(/^## /gm) ?? []).length).toBe(2);
+      expect(text).not.toMatch(/\S\n## /); // 没有「上一行有字紧跟着标题」
     } finally {
       stopAll();
       cleanup();
