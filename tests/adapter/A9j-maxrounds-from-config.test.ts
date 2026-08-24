@@ -3,7 +3,7 @@
  *
  * 来源事故（2026-08-24 实测）：`State` 自带 `DEFAULTS.maxRounds = 5`，`flow.ts` 读的是
  * `state.maxRounds`，而**没有任何地方**把 `cfg.maxRounds` 写进 state。配 2 也照样
- * 走 5 轮才 stuck——人填了不生效（D-51 的机制首跑就照出它）。
+ * 走 5 轮才 stuck——人填了不生效（D-52 的机制首跑就照出它）。
  *
  * 为什么原有测试抓不到：A4 用 `cfg.maxRounds` 当循环上限，而模板里正好是 5、
  * 与 `DEFAULTS` 撞上——两个来源恰好同值，断言就永远成立。这是 D-25 要防的

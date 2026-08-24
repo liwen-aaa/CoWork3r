@@ -1,5 +1,5 @@
 /**
- * check-config-consumed.mjs — D-51 的机制落点（配置字段必须有消费点）
+ * check-config-consumed.mjs — D-52 的机制落点（配置字段必须有消费点）
  *
  * 来源事故（2026-08-24 实测，两个）：
  *   ① `roleNotes` —— `wire.ts` 写 `buildSystemPrompt(role, event.systemPrompt)`，
@@ -36,7 +36,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 /** 被拦时打印的判据原文（D-48：机制的报错要自带判据，移出读序后它是唯一入口） */
-const D51 = `D-51 配置字段必须有消费点：wf.config.json 的每个字段（FIELDS 表的键）
+const D52 = `D-52 配置字段必须有消费点：wf.config.json 的每个字段（FIELDS 表的键）
    必须在 src/ 里被真的读取。有解析、有诊断、有模板示例，而没有人读它 = 人填了不生效。
    来源：roleNotes 四处声明存在而从未注入；maxRounds 被 State 默认值遮蔽，配 2 也走 5 轮。
    比 D-49 更坏一点：配置是**人填的**，静默忽略会让他以为自己配了（老仓库 testCmd 同病）。`;
@@ -85,7 +85,7 @@ function consumers(key) {
   return hits;
 }
 
-console.log("D-51 配置字段必须有消费点（口径见本脚本文件头）\n");
+console.log("D-52 配置字段必须有消费点（口径见本脚本文件头）\n");
 
 const dead = [];
 for (const key of keys) {
@@ -104,7 +104,7 @@ for (const k of dead) {
 
 console.log(`\n判定：${unlisted.length === 0 ? "PASS" : `FAIL（${unlisted.length} 个字段没人读）`}`);
 if (unlisted.length > 0) {
-  console.log(`\n判据原文：\n   ${D51}`);
+  console.log(`\n判据原文：\n   ${D52}`);
   console.log(
     `\n怎么改：每个字段二选一——\n` +
       `   ① **接线**：在 src/ 里真的读它，并补一条从公共入口验证「配了就生效」的测试\n` +

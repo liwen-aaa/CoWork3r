@@ -2,7 +2,10 @@
   "name": "work-flow",
   "version": "0.0.0",
   "description": "三窗口协作工作流：把「AI 谎报完成」堵在机制层",
-  "keywords": ["pi-package", "workflow"],
+  "keywords": [
+    "pi-package",
+    "workflow"
+  ],
   "type": "module",
   "engines": {
     "node": ">=22.19.0"
@@ -11,10 +14,12 @@
     "typebox": "*"
   },
   "pi": {
-    "extensions": ["./extensions"]
+    "extensions": [
+      "./extensions"
+    ]
   },
   "scripts": {
-    "pretest": "npm run check:disciplines && npm run check:testsize && npm run check:consensus && npm run check:vocab && npm run check:wiring",
+    "pretest": "npm run check:disciplines && npm run check:testsize && npm run check:consensus && npm run check:vocab && npm run check:wiring && npm run check:config",
     "test": "vitest --run",
     "verify:m1": "node tests/manual/M1-poll-fallback.mjs",
     "docs:protocol": "node scripts/docs-protocol.mjs",
@@ -26,7 +31,8 @@
     "check:wiring": "node scripts/check-wiring.mjs",
     "typecheck": "tsc --noEmit",
     "docs:progress": "node scripts/docs-progress.mjs",
-    "wording:gates": "node scripts/gate-wording.mjs"
+    "wording:gates": "node scripts/gate-wording.mjs",
+    "check:config": "node scripts/check-config-consumed.mjs"
   },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "^0.83.0",

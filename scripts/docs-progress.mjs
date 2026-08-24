@@ -13,7 +13,8 @@
  *
  * 里程碑为什么调 `parsePlan` 而不自己写正则：第一版写了一份
  * `/^## 里程碑 (\S+) (.+)$/`，而它没归一 CRLF——docs/plan.md 被 Windows 的
- * autocrlf 改成 CRLF 那一天，`(.+)$` 卡在 `` 上，本脚本静默产出
+ * autocrlf 改成 CRLF 那一天，`(.+)$` 卡在 `
+` 上，本脚本静默产出
  * 「0 个里程碑 / 已验收 0/0」并把整张表写空。无异常、无非零退码。
  *
  * 那正是本项目存在的理由：语法写两份，两份不一致时没有任何信号（老仓库四份
@@ -28,7 +29,7 @@
  * 而 vitest 口径是 23 / 55 / 57。三处手写数字，三个都对不上。
  */
 import { execSync } from "node:child_process";
-import { existsSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import { parsePlan } from "../src/plan/index.ts";
 
@@ -144,9 +145,33 @@ w("离开每轮读序的纪律条目（D-48），它们由 `npm test` 的 pretes
 w();
 w("| 条目 | 机制 |");
 w("|---|---|");
-w("| D-41 自检不得超过运行时 | `npm run check:testsize` |");
-w("| D-47 只增不改有机制 | `npm run check:disciplines` |");
+// 从 pretest 与 disciplines 落点列推导，不手写——手写过一次，D-49/D-52 加进
+// pretest 之后这张表漏了两行而没有任何信号（生成物却手写 = D-03 + D-04）
+for (const m of residentMechanisms()) {
+  w("| " + m.id + " " + m.title + " | `npm run " + m.cmd + "` |");
+}
 w();
+
+/**
+ * 常驼机制表：pretest 里跑的 check:* ∩ disciplines 落点列声称的那些。
+ * 两处交叉才算：脚本真的在 pretest 里（每轮跑）且台账认它是某条的落点。
+ */
+function residentMechanisms() {
+  const pretest = JSON.parse(readFileSync("package.json", "utf-8")).scripts.pretest;
+  const cmds = [...pretest.matchAll(/npm run (check:[\w-]+)/g)].map((m) => m[1]);
+  const disc = readFileSync("docs/disciplines.md", "utf-8");
+  const out = [];
+  for (const cmd of cmds) {
+    for (const line of disc.split("\n")) {
+      if (!line.startsWith("| D-") || !line.includes("npm run " + cmd)) continue;
+      const id = /^\| (D-\d+) \|/.exec(line);
+      const title = /\*\*([^*]+)\*\*/.exec(line);
+      if (id && title) out.push({ id: id[1], cmd, title: title[1].trim() });
+      break;
+    }
+  }
+  return out;
+}
 
 writeFileSync(OUT, L.join("\n") + "\n", "utf-8");
 console.log(`已生成 ${OUT}（${milestones.length} 个里程碑，已拆 ${shrunk}/8 份文档）`);

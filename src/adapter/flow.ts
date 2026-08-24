@@ -38,6 +38,15 @@ export type FlowContext = {
   root: string;
   msg: Message;
   milestone: Milestone | null;
+  /**
+   * 连续失败上限，来自 `cfg.maxRounds`。
+   *
+   * 为何从外面传而不在本层读配置：flow 是纯函数层，不依赖 03-config
+   * （依赖图：07-adapter 在上，flow 只碰 01-channel 与 04-plan）。
+   * 缺省时不写，由 State 的默认值兑付——但那正是 D-52 照出的那个病（默认值
+   * 遮蔽配置值），所以真实链路上 wire 必须传它（A9j 钉着）。
+   */
+  maxRounds?: number;
 };
 
 export type FlowResult = {
@@ -60,6 +69,8 @@ export const FLOW: Record<MsgType, (ctx: FlowContext) => FlowResult> = {
       round: 1,
       consecutiveFails: 0,
       awaitingHuman: "", // 新里程碑开工：上一个的许可不能漏过来
+      // 阀值从配置来，分发时落盘（D-52：不落则 State 默认 5 永远遮蔽 cfg.maxRounds）
+      ...(ctx.maxRounds !== undefined ? { maxRounds: ctx.maxRounds } : {}),
       ...(hash !== undefined ? { assertionHash: hash } : {}),
     });
     return { wake: "dev" };

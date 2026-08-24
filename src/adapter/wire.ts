@@ -25,6 +25,7 @@ import { guardNoMilestone } from "./guard.ts";
 import type { WindowRole } from "./activate.ts";
 import { wireWake, type WakeOptions } from "./wake.ts";
 import { wireHumanDrain } from "./drain.ts";
+import { REMIND_TEXT, shouldRemind } from "./remind.ts";
 
 export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {}): () => void {
   const wake = wireWake(role, pi, opts); // 唤醒接线（M6-010）：句柄 keyed by root，见 wake.ts
@@ -41,7 +42,8 @@ export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {})
     const msg = build(type, role, { ...input, from: role });
     const r = deliver(cwd, msg, checkRoute);
     if (!r.ok) return { ok: false, reason: r.reason };
-    FLOW[msg.type]({ root: cwd, msg, milestone: milestone(parsed.plan, msg.milestone ?? "") });
+    // maxRounds 从配置来（D-52：不传则 State 默认 5 遮蔽配置值，A9j 钉着）
+    FLOW[msg.type]({ root: cwd, msg, milestone: milestone(parsed.plan, msg.milestone ?? ""), maxRounds: cfg.maxRounds });
     return { ok: true };
   };
 
@@ -71,8 +73,15 @@ export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {})
     }
   });
 
-  pi.on("before_agent_start", (event) => ({
-    systemPrompt: buildSystemPrompt(role as SpecRole, event.systemPrompt),
+  // 注入规约 + 项目事实。`roleNotes` 必须从 cfg 里取并传进去（A9i）：
+  // 第三参曾长期不传，于是 D-18 一整条纪律 + 一条决策 + 模板示例全是空的。
+  // 配置不可用也要注规约：角色认同不能依赖项目配置能不能解析（D-01 靠它）
+  pi.on("before_agent_start", (event, ctx) => ({
+    systemPrompt: buildSystemPrompt(
+      role as SpecRole,
+      event.systemPrompt,
+      inspectConfig(ctx.cwd).cfg?.roleNotes,
+    ),
   }));
 
   // 注入自检（P1 机制落点）：agent_start 时查特征串，被替换必须出声（静默症状）
@@ -113,19 +122,12 @@ export function wire(role: WindowRole, pi: ExtensionAPI, opts: WakeOptions = {})
     if (chain.includes(G_source_chained)) takeSourceBaseline(ctx.cwd, cfg.source);
   });
 
+  // 收尾提醒：判定全在 remind.ts（这里只问“该不该”并发出去）。
+  // 无里程碑 / printーrpc 无会话窗口 → 不提醒
   pi.on("agent_end", (event, ctx) => {
-    if (readState(ctx.cwd).milestone === "" || ctx.mode !== "tui") return; // 无里程碑或 print/rpc 无会话窗口
-    const ms = event.messages;
-    // 本轮没有「wf: 收到…」唤醒消息（无任务上下文：空转/闲聊轮次）→ 不提醒。
-    // 提醒语义是「有活该投」，没活提醒 = 逼 LLM 自问该不该投（M6-013，retro 八）
-    const hasWork = ms.some((m) => m.role === "user" && (typeof m.content === "string" ? m.content : m.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("")).startsWith("wf: 收到"));
-    if (!hasWork) return;
-    // 已投递或本轮由上一条提醒触发 → 不再提醒（followUp 自触发新回合 = 死循环，实测 2026-08-22）。
-    // user 文本兼容 string 与数组两形态：真实 followUp 的 content 是 [{type:"text",text}]
-    // （pi agent-session.js _queueFollowUp 构造），只认 string 会漏判 → 循环继续烧
-    const sent = ms.some((m) => (m.role === "assistant" && m.content.some((c) => c.type === "toolCall" && c.name === "send_task")) || (m.role === "user" && (typeof m.content === "string" ? m.content : m.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("")).startsWith("wf: 本轮结束")));
-    if (sent) return;
-    pi.sendUserMessage("wf: 本轮结束。若已完成请调 send_task 投出去。", { deliverAs: "followUp" });
+    if (readState(ctx.cwd).milestone === "" || ctx.mode !== "tui") return;
+    if (!shouldRemind(event.messages)) return;
+    pi.sendUserMessage(REMIND_TEXT, { deliverAs: "followUp" });
   });
 
   return () => {

@@ -96,19 +96,24 @@ describe("A9c agent_end 未投递提醒", () => {
       "agent_end",
       {
         messages: [
+          // 真实死循环现场是**两条都在**：先被唤醒（有活），提醒发出去，
+          // followUp 又触发新回合——于是下一轮的 messages 里唤醒与提醒共存。
+          // 只放提醒消息会被 hasWork 前置拦住（M6-013），停止条件根本走不到：
+          // 那样用例仍然绿，但绿的理由不是它测的那件事（2026-08-24 拆除停止条件实测仍绿）。
+          { role: "user", content: "wf: 收到 task_assignment（arch → dev，M1）：造 src/hello.txt", timestamp: 1 },
           // 真实 followUp 的 content 是数组形态 [{type:"text",text}]（pi agent-session.js
           // _queueFollowUp 构造，真进程实测确认）——mock 必须同形状，否则测试绿、真实
           // 链路断（D-25：与 M6-003/E1 绕 schema 同形状的坑）
           {
             role: "user",
             content: [{ type: "text", text: "wf: 本轮结束。若已完成请调 send_task 投出去。" }],
-            timestamp: 1,
+            timestamp: 2,
           },
         ],
       },
       { cwd: root, mode: "tui" },
     );
-    expect(pi.sent).toHaveLength(0);
+    expect(pi.sent, "有活 + 本轮已提醒过 → 不能再提醒，否则三窗口全卡死").toHaveLength(0);
     cleanup();
   });
 
