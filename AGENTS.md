@@ -21,5 +21,5 @@
 ## 边界
 
 - `src/` 里 pi 只能 `import type` — D-07，A9 会 grep
-- 模块完工要拆掉对应的 `NN-*.md` — D-06
-- 每里程碑**至少**三个 commit：测试红 → 实现绿 → 文档收缩（固定数只是下限，D-46）
+- 八份模块文档已拆完（D-06），`docs/modules/` 只剩 README.md 的依赖图
+- 每里程碑**至少**三个 commit：测试红 → 实现绿 → 文档收缩（固定数只是下限，D-46；M6 之后 commit 权移交 tester /pass）
