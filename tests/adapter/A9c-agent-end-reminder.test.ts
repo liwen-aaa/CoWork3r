@@ -38,13 +38,33 @@ describe("A9c agent_end 未投递提醒", () => {
     return { ...p, pi };
   }
 
-  it("未投递 + state 有里程碑 + tui → 提醒一次", () => {
+  it("未投递 + state 有里程碑 + tui + 本轮被唤醒干活 → 提醒一次", () => {
     const { root, pi, cleanup } = setup();
     stateWithMilestone(root);
-    pi.emit("agent_end", { messages: [] }, { cwd: root, mode: "tui" });
+    pi.emit(
+      "agent_end",
+      {
+        messages: [
+          { role: "user", content: "wf: 收到 task_assignment（arch → dev，M1）：造 src/hello.txt", timestamp: 1 },
+        ],
+      },
+      { cwd: root, mode: "tui" },
+    );
     expect(pi.sent).toHaveLength(1);
     expect(pi.sent[0]!.text).toContain("本轮结束");
     expect(pi.sent[0]!.opts).toEqual({ deliverAs: "followUp" });
+    cleanup();
+  });
+
+  it("本轮无 wf 唤醒消息（空转/闲聊轮次，无任务上下文）→ 不提醒（M6-013）", () => {
+    const { root, pi, cleanup } = setup();
+    stateWithMilestone(root);
+    pi.emit(
+      "agent_end",
+      { messages: [{ role: "user", content: "今天天气不错", timestamp: 1 }] },
+      { cwd: root, mode: "tui" },
+    );
+    expect(pi.sent).toHaveLength(0);
     cleanup();
   });
 
