@@ -55,12 +55,16 @@ cp templates/wf.config.json wf.config.json   # 改 test/gate 为你的项目命�
 **3. 打开三窗口:**
 
 ```powershell
+# Windows(Windows Terminal)
 launch\trio.ps1 -Root <项目根目录>    # 或双击 launch/trio.bat
+
+# Linux / WSL / macOS(需要 tmux)
+./launch/trio.sh <项目根目录>
 ```
 
 对 ARCH 窗口用人话说你要做什么,系统开始自动流转:ARCH 拆里程碑 → DEV 实现 → TESTER 验收 → 你确认 → 下一轮。
 
-> 平台说明:当前 `launch/` 脚本面向 Windows(ps1/bat);扩展本身与平台无关,可在任意支持 pi 的环境手动按 `WF_ROLE=arch|dev|tester` 启动三个窗口。
+> 平台说明:核心与平台无关(纯 Node + node:fs,无平台分支);启动脚本按平台选——Windows 用 `trio.ps1`/`trio.bat`(Windows Terminal 三格布局),Unix 系用 `trio.sh`(tmux,三格 30/35/35,防重复启动)。手动开三窗口:`WF_ROLE=arch|dev|tester pi` 各一个终端即可。
 
 ## 目录结构
 
@@ -68,7 +72,7 @@ launch\trio.ps1 -Root <项目根目录>    # 或双击 launch/trio.bat
 |---|---|
 | `src/` | 实现。七层依赖单向,`pi` 只出现在最外层且只作参数传入 |
 | `extensions/` | 三个窗口的 pi 扩展入口(按 `WF_ROLE` 激活) |
-| `launch/` | 三窗口启动脚本(Windows) |
+| `launch/` | 三窗口启动脚本(Windows:ps1/bat;Unix:trio.sh/tmux) |
 | `tests/` | 测试。**文件名 = 约束编号**,`ls tests/channel/` 就是 M1 的验收清单 |
 | `templates/` | 规划书与配置模板(断言语法的可运行示例) |
 | `docs/` | 文档:纪律、共识、决策、验收记录、协议(见下) |
