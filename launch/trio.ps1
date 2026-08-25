@@ -2,11 +2,11 @@
 # Run from a physical terminal: powershell -ExecutionPolicy Bypass -File launch\trio.ps1 -Root <project-root>
 # Or double-click trio.bat (sibling).
 #
-# Migrated from the old repo (前身仓库 work-flow-paper 的 launch 脚本).
+# Migrated from the old repo (work-flow-paper 留档仓库的 launch 脚本).
 # The shape (adaptive WorkingArea, wt --title + --suppressApplicationTitle, >=3 WF_ROLE anti-dup)
 # was already validated there; "building a custom window-positioning script" was explicitly rejected.
 # Changes from the old copy:
-#   - $Root is a parameter now (old copy hardcoded 前身仓库 work-flow-paper)
+#   - $Root is a parameter now (old copy hardcoded the old repo path)
 #   - WF_MILESTONE_PREFIX removed (milestone ids come from the plan/messages only)
 #   - --skill removed (role specs are injected via before_agent_start by 06-roles)
 #   - anti-dup matches on $Root instead of the old project name

@@ -18,7 +18,7 @@
   "reserve the final acceptance authority for a person"（机械检查与人的实质判断分工）。
 - **M4-002（medium）— 落地证据位于 companion 仓库但论文未指明位置**：C6 的 workflow-evolution
   地图、C7/6.1 的 verify-extensions.mjs 实际位于 companion work-flow 仓库
-  （前身仓库 work-flow），论文仓库 docs/wayfinding/maps/ 下只有 paper-evolution。
+  （前身仓库），论文仓库 docs/wayfinding/maps/ 下只有 paper-evolution。
   修复：C6 指明地图位于 companion 仓库 `docs/wayfinding/maps/workflow-evolution/` 并说明该仓库
   也承载参考实现；C7 指明套件为 companion 仓库 `scripts/verify-extensions.mjs`；6.1 分别给出
   workflow-evolution 地图/verify 套件（companion 仓库）与 paper-evolution 地图（本仓库）的
