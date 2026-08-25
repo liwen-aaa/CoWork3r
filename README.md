@@ -110,4 +110,6 @@ npm run docs:protocol # 重生协议文档
 
 ## 许可证
 
-待定(见下文)。
+[GNU Affero General Public License v3.0](LICENSE)。
+
+使用本项目代码/衍生作品的网络服务,须以相同许可证开源其源码(AGPL-3.0 §13)。
