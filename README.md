@@ -1,64 +1,113 @@
 # work-flow
 
-三窗口 AI 协作工作流（pi 扩展）：把「AI 谎报完成」堵在机制层。
+> 三窗口 AI 协作工作流(pi 扩展):把「AI 谎报完成」堵在机制层。
 
-三个隔离的窗口（ARCH / DEV / TESTER）+ 文件消息通道 + 装在 `tool_call` 上的拦截链。
-两条支柱：**生产者不能宣布自己完成**（所以 dev 与 tester 是两个上下文）、
-**纪律不进拦截链就不会被遵守**（所以 gate 是代码，不是提示词）。
+状态:**六里程碑全部验收**(2026-08-23)｜ 平台:Windows + [pi](https://github.com/earendil-works/pi) ｜ 运行时:Node ≥ 22.19
 
-## 状态：六里程碑全部验收
+用人话告诉 ARCH 你想做什么,它拆成里程碑,DEV 写代码、TESTER 按断言逐条验收、你确认放行,循环推进。窗口收到消息自动唤醒,随时可介入,**未经验证和人工确认,任何东西都不算完成**。
 
-进度看 [`docs/progress.md`](docs/progress.md)（生成物，`npm run docs:progress`）。
-本文不再手写里程碑表——它曾同时存在于三处并全部过时，那是 D-04 + D-02 的合并症状。
+---
 
-八份架构文档已完整（`docs/modules/`）且代码全部落地，M1–M6 已验收（2026-08-23）。
-接入与分发：`pi install -l <本仓库绝对路径>` + `launch/trio.ps1` 三窗口（见 `docs/plan.md` M6）。
+## 它能做什么
 
-## 当前等你拍板的事（决策者入口）
+- **三窗口协作**:ARCH(规划与分发)/ DEV(实现)/ TESTER(验收)三个隔离的 pi 窗口,经磁盘文件通道通信,互不可见对方上下文。
+- **完成声明被机制拦截**:生产者不能宣布自己完成——DEV 的产出必须由 TESTER 独立验收,且验收判据是**人签字过的断言**。
+- **验收走断言表**:每个里程碑带 `[auto]`(命令/路径,可机器验证)与 `[human]`(人确认)两类断言,TESTER 逐条验证,全部通过才放行。
+- **判据变更要人批**:gate 判据(匹配规则/阈值/必填字段)的修改是体系结构变更,必须升级给人审批——评分函数不能改自己的尺子。
+- **窗口自动唤醒**:消息落盘即触发目标窗口,无需人手动踢;重启不丢消息,并发不乱。
+- **随时介入**:三个真窗口给人看和介入,干预自动留痕;你只做三件事——看进度、说需求、确认放行。
+- **生成物自动重生**:协议文档、进度表由脚本从代码/规划书生成,杜绝手写第二份权威。
+- **哑弹审计**:接线检查(`npm run check:wiring`)抓「有实现、有测试、有文档、零调用点」的死机制——它伪装成防线,比没有防线更危险。
 
-> 六里程碑**全部验收**（2026-08-23）：M6 已验收，里程碑阶段结束。
-> 后续 = 在真实项目里接入并跑里程碑（`pi install -l` + `launch/trio.ps1`）。
-> 详情看 [`docs/progress.md`](docs/progress.md)（生成物）——本文不再手写里程碑表。
+## 工作原理(30 秒版)
 
-## 现在能跑什么
+```
+ARCH ──分发──▶ DEV ──产出──▶ TESTER ──验收──▶ 你(确认/放行)
+  ▲                                                        │
+  └───────────────── 下一里程碑 ◀──────────────────────────┘
+```
+
+- 三个独立 pi 进程 + 磁盘文件消息通道(单槽位锁,禁止覆盖)。
+- 拦截链装在 `tool_call` 上:行为发生时拦截,当场收 reason 改,而不是事后检查产物。
+- 两条支柱:**生产者不能宣布自己完成**(DEV 与 TESTER 是两个隔离上下文)、**纪律不进拦截链就不会被遵守**(gate 是代码,不是提示词)。
+
+设计为什么长这样、被否决的替代方案,见 [`docs/consensus.md`](docs/consensus.md) 与 [`docs/decisions.md`](docs/decisions.md)。
+
+## 快速开始
+
+前置条件:Node ≥ 22.19、已安装 [pi](https://github.com/earendil-works/pi)、Windows Terminal(可选,用于三窗口布局)。
+
+**1. 安装扩展**(在你的目标项目里):
+
+```bash
+npm install <本仓库绝对路径>     # 或 pi install -l <本仓库绝对路径>
+```
+
+**2. 写规划书与配置**(拷模板改):
+
+```bash
+cp templates/plan.minimal.md docs/plan.md
+cp templates/wf.config.json wf.config.json   # 改 test/gate 为你的项目命令
+```
+
+规划书语法见 [`templates/plan.md`](templates/plan.md)(可运行示例)。
+
+**3. 打开三窗口:**
+
+```powershell
+launch\trio.ps1 -Root <项目根目录>    # 或双击 launch/trio.bat
+```
+
+对 ARCH 窗口用人话说你要做什么,系统开始自动流转:ARCH 拆里程碑 → DEV 实现 → TESTER 验收 → 你确认 → 下一轮。
+
+> 平台说明:当前 `launch/` 脚本面向 Windows(ps1/bat);扩展本身与平台无关,可在任意支持 pi 的环境手动按 `WF_ROLE=arch|dev|tester` 启动三个窗口。
+
+## 目录结构
+
+| 路径 | 是什么 |
+|---|---|
+| `src/` | 实现。七层依赖单向,`pi` 只出现在最外层且只作参数传入 |
+| `extensions/` | 三个窗口的 pi 扩展入口(按 `WF_ROLE` 激活) |
+| `launch/` | 三窗口启动脚本(Windows) |
+| `tests/` | 测试。**文件名 = 约束编号**,`ls tests/channel/` 就是 M1 的验收清单 |
+| `templates/` | 规划书与配置模板(断言语法的可运行示例) |
+| `docs/` | 文档:纪律、共识、决策、验收记录、协议(见下) |
+
+## 文档导航
+
+| 你想 | 读 |
+|---|---|
+| 了解设计意图(为什么长这样) | [`docs/consensus.md`](docs/consensus.md) → [`docs/decisions.md`](docs/decisions.md) |
+| 理解架构分层 | [`docs/modules/README.md`](docs/modules/README.md) 依赖图 |
+| 协议与消息通道 | [`docs/protocol.md`](docs/protocol.md)(生成物) |
+| 里程碑状态 | [`docs/progress.md`](docs/progress.md)(生成物) |
+| 动手改代码 | [`AGENTS.md`](AGENTS.md)(读序)+ [`docs/disciplines.md`](docs/disciplines.md)(判据) |
+| 看真实失败记录 | [`docs/verification/`](docs/verification/) —— M6.6 判 FAIL:344 用例全绿而完成路径从未接线 |
+
+## 开发
 
 ```bash
 npm i
-npm test              # vitest；pretest 会先跑 D-41 / D-47 两个纪律检查
+npm test              # vitest;pretest 先跑 6 个纪律检查(D-41/D-47/D-49/D-52 等)
 npm run typecheck     # tsc --noEmit
 npm run docs:progress # 重生进度表
 npm run docs:protocol # 重生协议文档
 ```
 
-## 目录
+## 背景
 
-| 路径 | 是什么 |
-|---|---|
-| `src/` | 实现。七层依赖单向，`pi` 只出现在最外层且只作参数传入 |
-| `tests/` | 测试。**文件名 = 约束编号**，所以 `ls tests/channel/` 就是 M1 的验收清单 |
-| `docs/modules/` | 架构：一模块一份。代码落地后逐份收缩（见 `disciplines.md` D-06） |
-| `docs/disciplines.md` | 纪律台账，每条带判据与落点。落点写「规约」= 明确承认它会被跳过 |
-| `docs/progress.md` | **生成物**（`npm run docs:progress`）：里程碑状态、实测用例数、D-06 收缩进度。勿手改 |
-| `docs/plan.md` | 本项目规划书。断言即验收标准 |
-| `docs/protocol.md` | **生成物**（`npm run docs:protocol`）：通道表、流转图、各角色可发的 type。勿手改 |
-| `docs/decisions.md` | 决策记录，追加式。准入门槛见 `disciplines.md` D-13 —— 够格才写 |
-| `docs/inherited/` | 前身项目的交接与复用清单（前身仓库已留档） |
-| `templates/` | 规划书骨架 = 断言语法的可运行示例 |
+本项目是前身 `work-flow` 的**重组**而非重写:事故换来的实现逐字照抄,自证机制大幅削减。
+前身的问题:自检代码 1995 行超过运行时 1898 行、文档与实现不符、无版本控制。
+哪些照抄、哪些只抄判据、哪些别碰,见 [`docs/inherited/reuse.md`](docs/inherited/reuse.md)。
 
-## 从哪里开始读
+## 贡献
 
-| 你是 | 读 |
-|---|---|
-| 要验收里程碑 / 拍未决判定 | 本文「当前等你拍板的事」表，逐项落点 |
-| 想懂它为什么这么设计 | [`docs/modules/README.md`](docs/modules/README.md) 的依赖图，然后挑一层看 |
-| 要动代码 | [`AGENTS.md`](AGENTS.md)（读序）+ [`docs/disciplines.md`](docs/disciplines.md)（动手前查相关条目） |
-| 想知道前身踩过什么坑 | [`docs/inherited/reuse.md`](docs/inherited/reuse.md)——哪些照抄、哪些只抄判据、哪些别碰 |
+项目按「判据 + 落点」纪律运行(见 `docs/disciplines.md`)。新机制接入前请自查:
 
-## 与前身的关系
+1. 它保护用户能力,还是保护仓库自证?(D-40)
+2. 它的判据能否写出「会红的真实输入」?(T14 红场景标准)
+3. 它有没有生产调用点,还是又一个哑弹?(D-49)
 
-前身仓库已留档、不再维护。它能跑，但自检代码 1995 行超过运行时 1898 行，
-文档描述的架构与实现不符，且无版本控制。
+## 许可证
 
-本仓库不是重写而是**重组**：事故换来的实现逐字照抄（通道层的轮询兜底、条件清空、原子写），
-自证机制大幅削减（六份契约、版本归档、合规检查器、约定台账全部取消）。
-判据见 `docs/inherited/reuse.md`。
+待定(见下文)。
