@@ -185,7 +185,7 @@ npm run docs:protocol   # 重生协议文档
 
 `npm test` 当前红两条，都需要人裁决（判据本体变更与断言变更不由 agent 自主改）：
 
-1. **`check:disciplines` 报 D-44 被删。** 例外名单按 commit hash 登记（`ALLOWED_DELETIONS`），而公开前的历史改写（`855e6aa` 一线）换掉了全部 hash，`42bd0e7` 已不存在，实际那次删除现在的 hash 是 `60b9646`。判据本身是对的、抓的事实也在，坏的是「按 hash 登记例外」这个形态扛不住 rebase。三条路：更新 hash（治标，下次 rebase 再坏）／改按内容登记（判据本体变更，要人批）／接受它长期红并按机制降级处理。机制包侧已按新 hash 登记，所以 `npm run check:mech` 是绿的。
+1. **~~`check:disciplines` 报 D-44 被删。~~（已解决）** 例外名单按 commit hash 登记（`ALLOWED_DELETIONS`），而公开前的历史改写（`855e6aa` 一线）换掉了全部 hash，`42bd0e7` 已不存在，实际那次删除现在的 hash 是 `60b9646`。已按第一条路（更新 hash）处理。**残留：这是治标——「按 hash 登记例外」这个形态扛不住下一次 rebase，改成按内容登记属判据本体变更，仍需人批（D-51）。** 教训已写成 D-55：判「不可修复」之前必须先用 `git cat-file -e` 证伪例外登记。
 2. **`D3-launch-ascii` 报 `launch/` 非纯 ASCII。** `trio.sh`（tmux 版，`3cd8b4f`）带中文注释，而 D3 断言要求 launch 下全部纯 ASCII —— 那条断言的来源是 PowerShell 5.1 按 GBK 读 UTF-8 无 BOM 会坏，对 `.sh` 不成立。改断言只有人能改（要么把断言收窄到 ps1/bat，要么把 trio.sh 注释改成英文）。
 
 ## 背景
