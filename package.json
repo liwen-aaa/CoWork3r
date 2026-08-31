@@ -19,12 +19,13 @@
     ]
   },
   "scripts": {
-    "pretest": "npm run check:disciplines && npm run check:testsize && npm run check:consensus && npm run check:vocab && npm run check:wiring && npm run check:config && npm run check:mech-selftest && npm run check:mech",
+    "pretest": "npm run check:disciplines && npm run check:landing && npm run check:testsize && npm run check:consensus && npm run check:vocab && npm run check:wiring && npm run check:config && npm run check:mech-selftest && npm run check:mech",
     "test": "vitest --run",
     "verify:m1": "node tests/manual/M1-poll-fallback.mjs",
     "docs:protocol": "node scripts/docs-protocol.mjs",
     "test:watch": "vitest",
     "check:disciplines": "node scripts/check-disciplines.mjs",
+    "check:landing": "node scripts/check-landing.mjs",
     "check:testsize": "node scripts/check-testsize.mjs",
     "check:consensus": "node scripts/check-consensus.mjs",
     "check:vocab": "node scripts/check-vocab.mjs",
