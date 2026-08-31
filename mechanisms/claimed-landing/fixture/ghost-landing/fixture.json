@@ -1,0 +1,4 @@
+{
+  "expectRed": "src/gates/nonexistent-gate.ts",
+  "why": "第二条声称已物化，落点却不存在——「声称已钉而落点不在」的最小形态"
+}

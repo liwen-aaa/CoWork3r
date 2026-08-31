@@ -1,0 +1,7 @@
+{
+  "name": "fixture-claimed-but-missing",
+  "scripts": {
+    "test": "vitest --run",
+    "check:wiring": "node scripts/check-wiring.mjs"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "fixture-all-wired",
+  "scripts": {
+    "test": "vitest --run",
+    "pretest": "npm run check:disciplines && npm run check:config",
+    "check:disciplines": "node scripts/check-disciplines.mjs",
+    "check:config": "node scripts/check-config-consumed.mjs"
+  }
+}

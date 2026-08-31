@@ -1,0 +1,5 @@
+{
+  "expectGreen": true,
+  "why": "零提交的新仓（day 0 真实状态：git init 之后还没 commit）。没有历史就没有删除可查，第一段跳过、编号递增照查。不排掉它，空目录 init 后第一次 mech run 就崩——每个新项目必经的那一步",
+  "git": { "path": "docs/disciplines.md", "commits": [] }
+}

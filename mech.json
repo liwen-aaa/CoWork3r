@@ -1,0 +1,25 @@
+{
+  "_": "机制包的项目侧配置。install = 装了哪些；options = 每包在本项目的参数（天生按项目变的东西：台账路径、id 格式、历史例外）。判据本体不在这里改——要改就改包，走上游（D-51）。",
+  "install": ["append-only-ledger", "claimed-landing", "wired-check"],
+  "options": {
+    "append-only-ledger": {
+      "as": "D-47",
+      "file": "docs/disciplines.md",
+      "idPattern": "^\\| (D-(\\d+)) \\|",
+      "sectionPrefix": "## ",
+      "allowedDeletions": ["60b9646"],
+      "_allowedDeletions": "60b9646 是来源事故本身（它删掉 D-44 换成 D-45）。记在这里而不是假装没发生——D-44 已由后续提交恢复，但历史不可改写。上游 scripts/check-disciplines.mjs 里同一条例外登记的是 42bd0e7，那是公开前历史改写（855e6aa）之前的旧 hash，已失效——按 hash 登记例外扛不住 rebase，见 README「已知缺口」。"
+    },
+    "claimed-landing": {
+      "as": "共识 ⑨",
+      "file": "docs/consensus.md",
+      "mark": "✅"
+    },
+    "wired-check": {
+      "as": "D-02 / D-47 第三段",
+      "file": "docs/disciplines.md",
+      "idPattern": "^\\| (D-\\d+) \\|",
+      "commandPattern": "npm run ([\\w:-]+)"
+    }
+  }
+}

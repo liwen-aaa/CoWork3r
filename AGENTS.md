@@ -4,7 +4,7 @@
 
 ## 每次都读
 
-- [`docs/disciplines.md`](docs/disciplines.md) — 纪律台账，动手前读。拿到常驻机制的条目离开本读序，被拦时以机制输出为准（D-48）；已离开 D-41 / D-47
+- [`docs/disciplines.md`](docs/disciplines.md) — 纪律台账，动手前读。拿到常驻机制的条目离开本读序，被拦时以机制输出为准（D-48）；已离开 D-41 / D-47 / D-54
 - [`docs/consensus.md`](docs/consensus.md) — 设计共识（2026-08-24 grill 会话定）：为什么长这样。改设计前读，物化状态 ⏳ 的条目实现时顺手钉
 
 ## 按需
@@ -13,6 +13,7 @@
 - `docs/modules/NN-*.md` — **只读你在改的那一个**（模块完工即拆，索引见上）
 - [`docs/plan.md`](docs/plan.md) — 当前里程碑的断言 = 验收标准
 - [`docs/inherited/reuse.md`](docs/inherited/reuse.md) — 写实现前查：这段能不能照抄老仓库
+- [`mechanisms/README.md`](mechanisms/README.md) — 要把一条经验带进别的项目时读（D-54：可移植单元是判据 + 会红的机制，不是文字）
 
 ## 默认不读
 
@@ -22,4 +23,5 @@
 
 - `src/` 里 pi 只能 `import type` — D-07，A9 会 grep
 - 八份模块文档已拆完（D-06），`docs/modules/` 只剩 README.md 的依赖图
+- `mechanisms/` 里的 `criterion.md` 是**判据本体**：改它要人批（D-51 / D-54）；`check.mjs` 的 reason 措辞与重构自主
 - 每里程碑**至少**三个 commit：测试红 → 实现绿 → 文档收缩（固定数只是下限，D-46；M6 之后 commit 权移交 tester /pass）

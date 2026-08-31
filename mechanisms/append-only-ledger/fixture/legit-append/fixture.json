@@ -1,0 +1,5 @@
+{
+  "expectGreen": true,
+  "why": "两个合法提交：第二个追加 D-45（新编号、递增），第三个只改 D-43 正文措辞。正文修订不是删除——这一档必须绿，否则改一个错别字都会红",
+  "git": { "path": "docs/disciplines.md", "commits": ["g1.md", "g2.md", "g3.md"] }
+}

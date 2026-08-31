@@ -1,0 +1,10 @@
+{
+  "id": "claimed-landing",
+  "criterion": "标了「已物化 ✅」的落点必须真存在（不存在 = 声称已钉而落点不在）",
+  "origin": "判据落点写「人手跑一次」等于没人跑（D-02）。共识文档是「为什么长这样」的唯一权威，它与代码静默分叉时没有第二处能对账。",
+  "applies": "any（纯 text + fs）",
+  "defaults": {
+    "file": "docs/consensus.md",
+    "mark": "✅"
+  }
+}

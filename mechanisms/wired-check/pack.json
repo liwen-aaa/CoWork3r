@@ -1,0 +1,11 @@
+{
+  "id": "wired-check",
+  "criterion": "台账声称的 `npm run x` 必须存在，且已挂进会自动跑的钩子（test / pre* / post*）",
+  "origin": "台账里写着 npm run check:disciplines，而那个 script 当时根本不存在——声称有机制的纪律在「文档说有」的状态里活过一阵，没人发现。",
+  "applies": "Node（读 package.json 的 scripts）。判据通用，换生态只重写 check.mjs，criterion.md 不动",
+  "defaults": {
+    "file": "docs/disciplines.md",
+    "idPattern": "^\\| (D-\\d+) \\|",
+    "commandPattern": "npm run ([\\w:-]+)"
+  }
+}

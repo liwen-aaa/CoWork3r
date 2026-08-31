@@ -1,0 +1,9 @@
+{
+  "name": "fixture-exists-but-not-wired",
+  "scripts": {
+    "test": "vitest --run",
+    "pretest": "npm run check:disciplines",
+    "check:disciplines": "node scripts/check-disciplines.mjs",
+    "check:config": "node scripts/check-config-consumed.mjs"
+  }
+}

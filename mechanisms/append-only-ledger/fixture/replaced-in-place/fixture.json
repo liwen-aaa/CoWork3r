@@ -1,0 +1,8 @@
+{
+  "expectRed": "删除了 D-44",
+  "why": "来源事故的最小复刻：第二个提交把 D-44 整行换成 D-45（一行 - 一行 +）",
+  "git": {
+    "path": "docs/disciplines.md",
+    "commits": ["v1.md", "v2.md"]
+  }
+}

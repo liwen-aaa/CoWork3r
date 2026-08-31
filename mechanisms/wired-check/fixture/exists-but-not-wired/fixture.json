@@ -1,0 +1,4 @@
+{
+  "expectRed": "未接线",
+  "why": "check:config 这个 script 真的存在、台账还写着「已串 pretest」，而 pretest 里只有 check:disciplines——「文档声称有机制」的精确形态"
+}

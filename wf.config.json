@@ -7,5 +7,5 @@
   "testPass": "(passed|PASS)",
   "gate": "npm run typecheck",
   "maxRounds": 5,
-  "roleNotes": "本仓库是 work-flow-remake：三窗口协作工作流的开发仓库。src/ 里 pi 只能 import type（D-07）；文档收缩见 docs/modules/README.md。"
+  "roleNotes": "本仓库是 work-flow-remake：三窗口协作工作流的开发仓库。src/ 里 pi 只能 import type（D-07）；文档收缩见 docs/modules/README.md。mechanisms/*/criterion.md 与 scripts/check-*.mjs 的判据本体（匹配规则 / 阈值 / 必填字段 / ALLOWED 名单）变更要先升级给人批（D-51），reason 措辞与重构自主。新机制包只能来自真实事故，且红例绿例两类 fixture 缺一不可（D-54）。"
 }

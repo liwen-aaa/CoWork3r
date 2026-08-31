@@ -1,0 +1,4 @@
+{
+  "expectGreen": true,
+  "why": "day 0 的空共识——用的是 templates/init/docs/consensus.md 的真实内容（零条目，只有文件头图例与示例注释）。在这里报红就是「装上即红」，而恒红的机制会被 skip"
+}

@@ -1,0 +1,4 @@
+{
+  "expectRed": "没有这个 script",
+  "why": "来源事故的最小复刻：台账声称 npm run check:disciplines，package.json 里没有它。同一份还带第二种形态——check:wiring 存在但不在 test/pre* 里（自称已串 pretest 而实际没串）"
+}

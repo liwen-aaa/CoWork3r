@@ -13,7 +13,7 @@
 | M3 | 配置与规约 | 8 auto + 1 human | 61/61 绿（11 文件） | ✅ 已验收 |
 | M4 | 规划书解析 | 4 auto + 1 human | 63/63 绿（11 文件） | ✅ 已验收 |
 | M5 | 拦截链 | 2 auto + 1 human | 72/72 绿（10 文件） | ✅ 已验收 |
-| M6 | 三窗口跑通 | 4 auto + 2 human | 70/70 绿（19 文件） | ✅ 已验收 |
+| M6 | 三窗口跑通 | 4 auto + 2 human | 87/87 绿（24 文件） | ✅ 已验收 |
 
 已验收 6/6 个里程碑。
 
@@ -34,4 +34,6 @@
 | D-41 自检不得超过运行时 | `npm run check:testsize` |
 | D-49 导出必须有生产调用点 | `npm run check:wiring` |
 | D-52 配置字段必须有消费点 | `npm run check:config` |
+| D-54 可移植单元是「判据 + 会红的机制」，不是判据的文字 | `npm run check:mech-selftest` |
+| D-54 可移植单元是「判据 + 会红的机制」，不是判据的文字 | `npm run check:mech` |
 

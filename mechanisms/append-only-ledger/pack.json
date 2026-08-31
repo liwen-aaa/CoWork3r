@@ -1,0 +1,12 @@
+{
+  "id": "append-only-ledger",
+  "criterion": "台账条目只增不改：某条在某次提交里消失 = 违反；编号严格递增（乱序会掩盖删除）",
+  "origin": "42bd0e7 把 D-44 整行替换成 D-45（一行 - 一行 +），违反的正是台账自己表头第三条，两个提交都没人发现。纯靠人记得的纪律会被跳过。",
+  "applies": "any（纯 text + git）",
+  "defaults": {
+    "file": "docs/disciplines.md",
+    "idPattern": "^\\| (D-(\\d+)) \\|",
+    "sectionPrefix": "## ",
+    "allowedDeletions": []
+  }
+}

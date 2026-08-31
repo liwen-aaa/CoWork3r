@@ -70,6 +70,12 @@
 - 拒绝:手写生成物(第二份权威,D-04);判据落点「人手跑一次」(M2 那条红两天的形状)
 - 物化:⏳ pretest 加「重生全部生成物 + diff 非空即失败」
 
+## 11. 经验外迁走机制包,不走文档拷贝(2026-08-26 定)
+
+- 共识:可移植单元 = 判据原文 + 会红的 fixture + 检查脚本(三件套);装机时双向卡准入闸(红例必红、绿例必绿);判据随 block 到达,故有机制的条目离开读序(D-48)
+- 拒绝:整包拷 disciplines.md 到新项目(落点全退回「规约」= 接受被跳过,D-02 的迁移形态);只要红例不要绿例(「永远返回红」也能过闸,而恒红机制会被 skip)
+- 物化:✅ `scripts/mech.mjs` + ✅ `mechanisms/README.md` + ✅ `mechanisms/append-only-ledger` + ✅ `mechanisms/claimed-landing` + ✅ `mechanisms/wired-check` + ✅ `mech.json`(项目侧参数,判据本体不在此改)+ ✅ `templates/init`(day 0 骨架:两条纪律 + 三份空表)+ ✅ `scripts/init.mjs`;⏳ 包按 ref 钉住 + 升级时 criterion diff 摆给人批
+
 ---
 
 ## 划界
