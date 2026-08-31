@@ -30,7 +30,7 @@
 
 | 条目 | 机制 |
 |---|---|
-| D-47 只增不改有机制 | `npm run check:disciplines` |
+| D-47 只增不改有机制 | `npm run check:mech`（`mechanisms/append-only-ledger`） |
 | D-41 自检不得超过运行时 | `npm run check:testsize` |
 | D-49 导出必须有生产调用点 | `npm run check:wiring` |
 | D-52 配置字段必须有消费点 | `npm run check:config` |
