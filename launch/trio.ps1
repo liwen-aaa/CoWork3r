@@ -2,7 +2,7 @@
 # Run from a physical terminal: powershell -ExecutionPolicy Bypass -File launch\trio.ps1 -Root <project-root>
 # Or double-click trio.bat (sibling).
 #
-# Migrated from the old repo (work-flow-paper 留档仓库的 launch 脚本).
+# Migrated from the old repo (work-flow-paper archive: its launch scripts).
 # The shape (adaptive WorkingArea, wt --title + --suppressApplicationTitle, >=3 WF_ROLE anti-dup)
 # was already validated there; "building a custom window-positioning script" was explicitly rejected.
 # Changes from the old copy:
